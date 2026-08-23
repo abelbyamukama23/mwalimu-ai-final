@@ -1,0 +1,1756 @@
+openapi: 3.0.3
+info:
+  title: Mwalimu Platform API
+  version: 1.0.0
+  description: Identity, institution, membership, and library API for the Mwalimu
+    platform.
+paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: api_v1_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/auth/me/:
+    get:
+      operationId: api_v1_auth_me_retrieve
+      description: Handle GET requests for the current user.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: api_v1_auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/institutions/:
+    get:
+      operationId: api_v1_institutions_list
+      description: |-
+        View set for institution management.
+
+        Any authenticated user may discover institutions. Any authenticated user may
+        create an institution and become its first administrator. Only institution
+        administrators may update or delete an institution.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInstitutionList'
+          description: ''
+    post:
+      operationId: api_v1_institutions_create
+      description: |-
+        View set for institution management.
+
+        Any authenticated user may discover institutions. Any authenticated user may
+        create an institution and become its first administrator. Only institution
+        administrators may update or delete an institution.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstitutionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Institution'
+          description: ''
+  /api/v1/institutions/{id}/:
+    get:
+      operationId: api_v1_institutions_retrieve
+      description: |-
+        View set for institution management.
+
+        Any authenticated user may discover institutions. Any authenticated user may
+        create an institution and become its first administrator. Only institution
+        administrators may update or delete an institution.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Institution'
+          description: ''
+    put:
+      operationId: api_v1_institutions_update
+      description: Only institution administrators may update an institution.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstitutionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Institution'
+          description: ''
+    patch:
+      operationId: api_v1_institutions_partial_update
+      description: Only institution administrators may partially update an institution.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInstitutionRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Institution'
+          description: ''
+    delete:
+      operationId: api_v1_institutions_destroy
+      description: Only institution administrators may delete an institution.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this institution.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/libraries/:
+    get:
+      operationId: api_v1_libraries_list
+      description: |-
+        View set for library management.
+
+        Institution administrators may create, update, and delete libraries within
+        their institution. Library administrators may update and delete libraries
+        according to policy. Members may view discoverable libraries and libraries
+        for which they hold an explicit access policy.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLibraryList'
+          description: ''
+    post:
+      operationId: api_v1_libraries_create
+      description: |-
+        View set for library management.
+
+        Institution administrators may create, update, and delete libraries within
+        their institution. Library administrators may update and delete libraries
+        according to policy. Members may view discoverable libraries and libraries
+        for which they hold an explicit access policy.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LibraryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Library'
+          description: ''
+  /api/v1/libraries/{library_pk}/access-policies/:
+    get:
+      operationId: api_v1_libraries_access_policies_list
+      description: |-
+        View set for managing library access policies.
+
+        Only institution administrators and library administrators may view,
+        create, update, or delete access policies for a library.
+      parameters:
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLibraryAccessPolicyList'
+          description: ''
+    post:
+      operationId: api_v1_libraries_access_policies_create
+      description: |-
+        View set for managing library access policies.
+
+        Only institution administrators and library administrators may view,
+        create, update, or delete access policies for a library.
+      parameters:
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LibraryAccessPolicyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryAccessPolicy'
+          description: ''
+  /api/v1/libraries/{library_pk}/access-policies/{id}/:
+    get:
+      operationId: api_v1_libraries_access_policies_retrieve
+      description: |-
+        View set for managing library access policies.
+
+        Only institution administrators and library administrators may view,
+        create, update, or delete access policies for a library.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryAccessPolicy'
+          description: ''
+    patch:
+      operationId: api_v1_libraries_access_policies_partial_update
+      description: |-
+        View set for managing library access policies.
+
+        Only institution administrators and library administrators may view,
+        create, update, or delete access policies for a library.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLibraryAccessPolicyRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryAccessPolicy'
+          description: ''
+    delete:
+      operationId: api_v1_libraries_access_policies_destroy
+      description: |-
+        View set for managing library access policies.
+
+        Only institution administrators and library administrators may view,
+        create, update, or delete access policies for a library.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/libraries/{library_pk}/resources/:
+    get:
+      operationId: api_v1_libraries_resources_list
+      description: |-
+        View set for resource management within a library.
+
+        Library administrators and institution administrators may create, update,
+        and delete resources. Authorized library users may list and retrieve
+        resources. The original binary is stored in S3-compatible object storage;
+        only metadata is kept in PostgreSQL.
+      parameters:
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResourceList'
+          description: ''
+    post:
+      operationId: api_v1_libraries_resources_create
+      description: |-
+        Upload a resource into the library.
+
+        Only library managers may upload resources.
+      parameters:
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+          description: ''
+  /api/v1/libraries/{library_pk}/resources/{id}/:
+    get:
+      operationId: api_v1_libraries_resources_retrieve
+      description: |-
+        View set for resource management within a library.
+
+        Library administrators and institution administrators may create, update,
+        and delete resources. Authorized library users may list and retrieve
+        resources. The original binary is stored in S3-compatible object storage;
+        only metadata is kept in PostgreSQL.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+          description: ''
+    patch:
+      operationId: api_v1_libraries_resources_partial_update
+      description: Only library managers may partially update resource metadata.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+          description: ''
+    delete:
+      operationId: api_v1_libraries_resources_destroy
+      description: |-
+        Delete the resource and its stored object.
+
+        Storage is deleted first so the system of record never points to a
+        missing object. If storage deletion fails, the database record is kept.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/libraries/{library_pk}/resources/{id}/download/:
+    get:
+      operationId: api_v1_libraries_resources_download_retrieve
+      description: Return the original binary for the resource.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: library_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+          description: ''
+  /api/v1/libraries/{id}/:
+    get:
+      operationId: api_v1_libraries_retrieve
+      description: |-
+        View set for library management.
+
+        Institution administrators may create, update, and delete libraries within
+        their institution. Library administrators may update and delete libraries
+        according to policy. Members may view discoverable libraries and libraries
+        for which they hold an explicit access policy.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this library.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Library'
+          description: ''
+    put:
+      operationId: api_v1_libraries_update
+      description: Only library managers may update a library.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this library.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LibraryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Library'
+          description: ''
+    patch:
+      operationId: api_v1_libraries_partial_update
+      description: Only library managers may partially update a library.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this library.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLibraryRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Library'
+          description: ''
+    delete:
+      operationId: api_v1_libraries_destroy
+      description: Only library managers may delete a library.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this library.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/memberships/:
+    get:
+      operationId: api_v1_memberships_list
+      description: |-
+        View set for managing memberships.
+
+        Users may request their own student memberships. Institution administrators
+        may list, retrieve, update, and delete memberships within their institution.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMembershipList'
+          description: ''
+    post:
+      operationId: api_v1_memberships_create
+      description: |-
+        View set for managing memberships.
+
+        Users may request their own student memberships. Institution administrators
+        may list, retrieve, update, and delete memberships within their institution.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+  /api/v1/memberships/{id}/:
+    get:
+      operationId: api_v1_memberships_retrieve
+      description: |-
+        View set for managing memberships.
+
+        Users may request their own student memberships. Institution administrators
+        may list, retrieve, update, and delete memberships within their institution.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this membership.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+    put:
+      operationId: api_v1_memberships_update
+      description: Only institution administrators may update memberships.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this membership.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+    patch:
+      operationId: api_v1_memberships_partial_update
+      description: Only institution administrators may partially update memberships.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this membership.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMembershipRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+          description: ''
+    delete:
+      operationId: api_v1_memberships_destroy
+      description: Only institution administrators may delete memberships.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this membership.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    AccessPolicyLibrary:
+      type: object
+      description: Minimal library representation nested inside access-policy responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    AccessPolicyLibraryRequest:
+      type: object
+      description: Minimal library representation nested inside access-policy responses.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - name
+      - slug
+    AccessPolicyUser:
+      type: object
+      description: Minimal user representation nested inside access-policy responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+      required:
+      - email
+      - id
+    AccessPolicyUserRequest:
+      type: object
+      description: Minimal user representation nested inside access-policy responses.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+      required:
+      - email
+    Institution:
+      type: object
+      description: Serializer for institution data.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        status:
+          $ref: '#/components/schemas/InstitutionStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - slug
+      - updated_at
+    InstitutionRequest:
+      type: object
+      description: Serializer for institution data.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        status:
+          $ref: '#/components/schemas/InstitutionStatusEnum'
+      required:
+      - name
+      - slug
+    InstitutionStatusEnum:
+      enum:
+      - active
+      - suspended
+      - archived
+      type: string
+      description: |-
+        * `active` - Active
+        * `suspended` - Suspended
+        * `archived` - Archived
+    Library:
+      type: object
+      description: Serializer for library data.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        institution:
+          allOf:
+          - $ref: '#/components/schemas/LibraryInstitution'
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/LibraryStatusEnum'
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - institution
+      - name
+      - slug
+      - updated_at
+    LibraryAccessPolicy:
+      type: object
+      description: Serializer for library access policy data.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        library:
+          allOf:
+          - $ref: '#/components/schemas/AccessPolicyLibrary'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/AccessPolicyUser'
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/LibraryAccessPolicyRoleEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - library
+      - updated_at
+      - user
+    LibraryAccessPolicyRequest:
+      type: object
+      description: Serializer for library access policy data.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        role:
+          $ref: '#/components/schemas/LibraryAccessPolicyRoleEnum'
+      required:
+      - user_id
+    LibraryAccessPolicyRoleEnum:
+      enum:
+      - administrator
+      - teacher
+      - student
+      type: string
+      description: |-
+        * `administrator` - Administrator
+        * `teacher` - Teacher
+        * `student` - Student
+    LibraryInstitution:
+      type: object
+      description: Minimal institution representation nested inside library responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    LibraryInstitutionRequest:
+      type: object
+      description: Minimal institution representation nested inside library responses.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - name
+      - slug
+    LibraryRequest:
+      type: object
+      description: Serializer for library data.
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/LibraryStatusEnum'
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+      required:
+      - institution_id
+      - name
+      - slug
+    LibraryStatusEnum:
+      enum:
+      - active
+      - archived
+      type: string
+      description: |-
+        * `active` - Active
+        * `archived` - Archived
+    Membership:
+      type: object
+      description: Serializer for membership data.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/MembershipUser'
+          readOnly: true
+        institution:
+          allOf:
+          - $ref: '#/components/schemas/MembershipInstitution'
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/MembershipRoleEnum'
+        status:
+          $ref: '#/components/schemas/MembershipStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - institution
+      - updated_at
+      - user
+    MembershipInstitution:
+      type: object
+      description: Minimal institution representation nested inside membership responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    MembershipInstitutionRequest:
+      type: object
+      description: Minimal institution representation nested inside membership responses.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - name
+      - slug
+    MembershipRequest:
+      type: object
+      description: Serializer for membership data.
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        role:
+          $ref: '#/components/schemas/MembershipRoleEnum'
+        status:
+          $ref: '#/components/schemas/MembershipStatusEnum'
+      required:
+      - institution_id
+    MembershipRoleEnum:
+      enum:
+      - administrator
+      - teacher
+      - student
+      - librarian
+      type: string
+      description: |-
+        * `administrator` - Administrator
+        * `teacher` - Teacher
+        * `student` - Student
+        * `librarian` - Librarian
+    MembershipStatusEnum:
+      enum:
+      - pending
+      - active
+      - inactive
+      - suspended
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `active` - Active
+        * `inactive` - Inactive
+        * `suspended` - Suspended
+    MembershipUser:
+      type: object
+      description: Minimal user representation nested inside membership responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+      required:
+      - email
+      - id
+    MembershipUserRequest:
+      type: object
+      description: Minimal user representation nested inside membership responses.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+      required:
+      - email
+    PaginatedInstitutionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Institution'
+    PaginatedLibraryAccessPolicyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LibraryAccessPolicy'
+    PaginatedLibraryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Library'
+    PaginatedMembershipList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+    PaginatedResourceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+    PatchedInstitutionRequest:
+      type: object
+      description: Serializer for institution data.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        status:
+          $ref: '#/components/schemas/InstitutionStatusEnum'
+    PatchedLibraryAccessPolicyRequest:
+      type: object
+      description: Serializer for library access policy data.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        role:
+          $ref: '#/components/schemas/LibraryAccessPolicyRoleEnum'
+    PatchedLibraryRequest:
+      type: object
+      description: Serializer for library data.
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/LibraryStatusEnum'
+        visibility:
+          $ref: '#/components/schemas/VisibilityEnum'
+    PatchedMembershipRequest:
+      type: object
+      description: Serializer for membership data.
+      properties:
+        institution_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        role:
+          $ref: '#/components/schemas/MembershipRoleEnum'
+        status:
+          $ref: '#/components/schemas/MembershipStatusEnum'
+    PatchedResourceRequest:
+      type: object
+      description: Serializer for resource metadata.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        resource_type:
+          $ref: '#/components/schemas/ResourceTypeEnum'
+    Resource:
+      type: object
+      description: Serializer for resource metadata.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        library:
+          allOf:
+          - $ref: '#/components/schemas/ResourceLibrary'
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        resource_type:
+          $ref: '#/components/schemas/ResourceTypeEnum'
+        original_filename:
+          type: string
+          readOnly: true
+        content_type:
+          type: string
+          readOnly: true
+        size:
+          type: integer
+          readOnly: true
+        object_key:
+          type: string
+          readOnly: true
+        checksum:
+          type: string
+          readOnly: true
+          description: SHA-256 hex digest of the original content.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ResourceStatusEnum'
+          readOnly: true
+        created_by:
+          allOf:
+          - $ref: '#/components/schemas/ResourceUser'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - checksum
+      - content_type
+      - created_at
+      - created_by
+      - id
+      - library
+      - name
+      - object_key
+      - original_filename
+      - resource_type
+      - size
+      - status
+      - updated_at
+    ResourceLibrary:
+      type: object
+      description: Minimal library representation nested inside resource responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    ResourceLibraryRequest:
+      type: object
+      description: Minimal library representation nested inside resource responses.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - name
+      - slug
+    ResourceRequest:
+      type: object
+      description: Serializer for resource metadata.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        resource_type:
+          $ref: '#/components/schemas/ResourceTypeEnum'
+      required:
+      - name
+      - resource_type
+    ResourceStatusEnum:
+      enum:
+      - pending
+      - uploading
+      - ready
+      - failed
+      - archived
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `uploading` - Uploading
+        * `ready` - Ready
+        * `failed` - Failed
+        * `archived` - Archived
+    ResourceTypeEnum:
+      enum:
+      - pdf
+      - docx
+      - txt
+      type: string
+      description: |-
+        * `pdf` - PDF
+        * `docx` - DOCX
+        * `txt` - Text
+    ResourceUser:
+      type: object
+      description: Minimal user representation nested inside resource responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+      required:
+      - email
+      - id
+    ResourceUserRequest:
+      type: object
+      description: Minimal user representation nested inside resource responses.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+      required:
+      - email
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+      required:
+      - access
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      description: Serializer for reading user data.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+      - is_active
+      - updated_at
+    VisibilityEnum:
+      enum:
+      - discoverable
+      - restricted
+      type: string
+      description: |-
+        * `discoverable` - Discoverable
+        * `restricted` - Restricted
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,194 @@
+"""Serializers for the libraries app."""
+
+import uuid
+
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
+
+from platform_api.apps.institutions.models import Institution
+from platform_api.apps.memberships.models import Membership, MembershipStatus
+
+from .models import Library, LibraryAccessPolicy, LibraryAccessRole, LibraryVisibility
+
+User = get_user_model()
+
+
+class LibraryInstitutionSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
+    """Minimal institution representation nested inside library responses."""
+
+    class Meta:
+        """Serializer metadata."""
+
+        model = Institution
+        fields = ["id", "name", "slug"]
+
+
+class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
+    """Serializer for library data."""
+
+    institution = LibraryInstitutionSerializer(read_only=True)
+    institution_id = serializers.UUIDField(write_only=True)
+    visibility = serializers.ChoiceField(
+        choices=LibraryVisibility.choices,
+        required=False,
+    )
+
+    class Meta:
+        """Serializer metadata."""
+
+        model = Library
+        fields = [
+            "id",
+            "institution",
+            "institution_id",
+            "name",
+            "slug",
+            "description",
+            "status",
+            "visibility",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "institution", "created_at", "updated_at"]
+
+    def validate_institution_id(self, value: uuid.UUID) -> uuid.UUID:
+        """Ensure the referenced institution exists."""
+        if not Institution.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("Institution not found.")
+        return value
+
+    def validate(self, attrs: dict[str, object]) -> dict[str, object]:
+        """Apply institution-scoped slug uniqueness validation."""
+        institution_id = attrs.get("institution_id")
+        if self.instance is not None:
+            institution_id = institution_id or self.instance.institution_id
+
+        raw_slug = attrs.get("slug")
+        if raw_slug and institution_id:
+            slug = str(raw_slug)
+            institution_id_value = uuid.UUID(str(institution_id))
+            queryset = Library.objects.filter(
+                institution_id=institution_id_value,
+                slug=slug,
+            )
+            if self.instance is not None:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            if queryset.exists():
+                message = (
+                    "A library with this slug already exists in this institution."
+                )
+                raise serializers.ValidationError({"slug": message})
+
+        return attrs
+
+
+class AccessPolicyUserSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
+    """Minimal user representation nested inside access-policy responses."""
+
+    class Meta:
+        """Serializer metadata."""
+
+        model = User
+        fields = ["id", "email"]
+
+
+class AccessPolicyLibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
+    """Minimal library representation nested inside access-policy responses."""
+
+    class Meta:
+        """Serializer metadata."""
+
+        model = Library
+        fields = ["id", "name", "slug"]
+
+
+class LibraryAccessPolicySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
+    """Serializer for library access policy data."""
+
+    user = AccessPolicyUserSerializer(read_only=True)
+    library = AccessPolicyLibrarySerializer(read_only=True)
+    user_id = serializers.UUIDField(write_only=True)
+    role = serializers.ChoiceField(
+        choices=LibraryAccessRole.choices,
+        required=False,
+    )
+
+    class Meta:
+        """Serializer metadata."""
+
+        model = LibraryAccessPolicy
+        fields = [
+            "id",
+            "library",
+            "user",
+            "user_id",
+            "role",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "library", "user", "created_at", "updated_at"]
+
+    def validate_user_id(self, value: uuid.UUID) -> uuid.UUID:
+        """Ensure the referenced user exists."""
+        if not User.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("User not found.")
+        return value
+
+    def validate(self, attrs: dict[str, object]) -> dict[str, object]:
+        """Ensure the target user belongs to the library's institution."""
+        library = self.context.get("library")
+        if library is None:
+            raise serializers.ValidationError("Library context is required.")
+
+        raw_user_id = attrs.get("user_id")
+        if raw_user_id is None and self.instance is not None:
+            raw_user_id = self.instance.user_id
+
+        if raw_user_id:
+            user_id = uuid.UUID(str(raw_user_id))
+            has_membership = Membership.objects.filter(
+                user_id=user_id,
+                institution=library.institution,
+                status=MembershipStatus.ACTIVE,
+            ).exists()
+            if not has_membership:
+                message = (
+                    "The user must have an active membership "
+                    "in the library's institution."
+                )
+                raise serializers.ValidationError({"user_id": message})
+
+            # Prevent duplicate access policies at the application layer.
+            existing_queryset = LibraryAccessPolicy.objects.filter(
+                library=library,
+                user_id=user_id,
+            )
+            if self.instance is not None:
+                existing_queryset = existing_queryset.exclude(pk=self.instance.pk)
+            if existing_queryset.exists():
+                raise serializers.ValidationError(
+                    {
+                        "user_id": (
+                            "This user already has an access policy for this library."
+                        ),
+                    },
+                )
+
+        return attrs
+
+    def create(self, validated_data: dict[str, object]) -> LibraryAccessPolicy:
+        """Create the access policy scoped to the library in the view context."""
+        library = self.context.get("library")
+        if library is None:
+            raise serializers.ValidationError("Library context is required.")
+
+        user_id = uuid.UUID(str(validated_data.pop("user_id")))
+        user = User.objects.get(pk=user_id)
+        validated_data.pop("library", None)
+
+        role_value = str(validated_data.get("role", LibraryAccessRole.STUDENT))
+        return LibraryAccessPolicy.objects.create(
+            library=library,
+            user=user,
+            role=role_value,
+        )
