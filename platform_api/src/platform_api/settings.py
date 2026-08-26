@@ -4,6 +4,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+import environ
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = os.getenv(
@@ -76,16 +78,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "platform_api.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DATABASE_NAME", "mwalimu"),
-        "USER": os.getenv("DATABASE_USER", "mwalimu"),
-        "PASSWORD": os.getenv("DATABASE_PASSWORD", "mwalimu"),
-        "HOST": os.getenv("DATABASE_HOST", "localhost"),
-        "PORT": os.getenv("DATABASE_PORT", "5432"),
-    },
-}
+_env = environ.Env()
+if os.getenv("DATABASE_URL"):
+    # Production (Render/Railway): DATABASE_URL is the single source of truth.
+    DATABASES = {"default": _env.db_url("DATABASE_URL")}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DATABASE_NAME", "mwalimu"),
+            "USER": os.getenv("DATABASE_USER", "mwalimu"),
+            "PASSWORD": os.getenv("DATABASE_PASSWORD", "mwalimu"),
+            "HOST": os.getenv("DATABASE_HOST", "localhost"),
+            "PORT": os.getenv("DATABASE_PORT", "5432"),
+        },
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {

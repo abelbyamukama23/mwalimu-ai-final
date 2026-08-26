@@ -44,26 +44,6 @@ services:
         fromDatabase:
           name: mwalimu-postgres
           property: connectionString
-      - key: DATABASE_NAME
-        fromDatabase:
-          name: mwalimu-postgres
-          property: database
-      - key: DATABASE_USER
-        fromDatabase:
-          name: mwalimu-postgres
-          property: user
-      - key: DATABASE_PASSWORD
-        fromDatabase:
-          name: mwalimu-postgres
-          property: password
-      - key: DATABASE_HOST
-        fromDatabase:
-          name: mwalimu-postgres
-          property: host
-      - key: DATABASE_PORT
-        fromDatabase:
-          name: mwalimu-postgres
-          property: port
       - key: CELERY_BROKER_URL
         fromService:
           type: keyvalue
@@ -135,26 +115,6 @@ services:
         fromDatabase:
           name: mwalimu-postgres
           property: connectionString
-      - key: DATABASE_NAME
-        fromDatabase:
-          name: mwalimu-postgres
-          property: database
-      - key: DATABASE_USER
-        fromDatabase:
-          name: mwalimu-postgres
-          property: user
-      - key: DATABASE_PASSWORD
-        fromDatabase:
-          name: mwalimu-postgres
-          property: password
-      - key: DATABASE_HOST
-        fromDatabase:
-          name: mwalimu-postgres
-          property: host
-      - key: DATABASE_PORT
-        fromDatabase:
-          name: mwalimu-postgres
-          property: port
       - key: CELERY_BROKER_URL
         fromService:
           type: keyvalue
