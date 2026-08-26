@@ -169,9 +169,7 @@ class ResourceViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         except Exception as exc:  # noqa: BLE001
             resource.status = ResourceStatus.FAILED
             resource.save(update_fields=["status"])
-            raise ValidationError(
-                {"file": f"Storage upload failed: {exc}"}
-            ) from exc
+            raise ValidationError({"file": f"Storage upload failed: {exc}"}) from exc
 
         resource.status = ResourceStatus.READY
         resource.save(update_fields=["status"])

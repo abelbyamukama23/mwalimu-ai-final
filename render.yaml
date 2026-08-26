@@ -1,0 +1,243 @@
+# Render Blueprint for the Mwalimu stack (monorepo)
+#
+# Apps are independent root directories; Render builds each service from its own
+# rootDir/Dockerfile. Push this repo to GitHub, then create a Blueprint in Render
+# pointing at it (New + Blueprint, select this repo) or `render blueprint launch`.
+#
+# VERIFY before launching (Render schema occasionally renames properties):
+#   - Postgres fromDatabase property names: database/host/password/port/user/connectionString
+#   - Redis connection property name: connectionString
+#   - Web-service public URL property (used below): RENDER_EXTERNAL_URL
+#     (if unavailable, set the URL vars manually to https://<service>.onrender.com)
+services:
+  # ---- System of record + orchestration ----------------------------------
+  - type: web
+    name: mwalimu-platform-api
+    rootDir: platform_api
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    preDeployCommand: >-
+      sh -c "pg_isready && psql \"$DATABASE_URL\" -c 'CREATE EXTENSION IF NOT EXISTS vector;' &&
+             .venv/bin/python manage.py migrate --noinput &&
+             .venv/bin/python manage.py collectstatic --noinput"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: platform_api.settings
+      - key: PYTHONPATH
+        value: /app/src
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "*.onrender.com"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://mwalimu-platform-api.onrender.com,https://mwalimu-frontend.onrender.com"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://mwalimu-frontend.onrender.com"
+      - key: CORS_ALLOW_CREDENTIALS
+        value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mwalimu-postgres
+          property: connectionString
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: mwalimu-postgres
+          property: database
+      - key: DATABASE_USER
+        fromDatabase:
+          name: mwalimu-postgres
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: mwalimu-postgres
+          property: password
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: mwalimu-postgres
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: mwalimu-postgres
+          property: port
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: mwalimu-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: mwalimu-redis
+          property: connectionString
+      # Agent Service URL (verify property; may need https:// + RENDER_EXTERNAL_URL)
+      - key: AGENT_SERVICE_BASE_URL
+        fromService:
+          type: web
+          name: mwalimu-agent-service
+          property: RENDER_EXTERNAL_URL
+      - key: AGENT_SERVICE_PUBLIC_BASE_URL
+        fromService:
+          type: web
+          name: mwalimu-agent-service
+          property: RENDER_EXTERNAL_URL
+      # Shared secrets that MUST match the agent service (set the same value on both)
+      - key: AGENT_SERVICE_JWT_SECRET_KEY
+        value: change-me-agentservice-jwt
+      - key: INTERNAL_SERVICE_SECRET_KEY
+        value: change-me-internal-service
+      - key: AGENT_STREAM_JWT_SECRET_KEY
+        value: change-me-stream-jwt
+      # Object storage (S3-compatible). No R2/S3 plugin field here — set in dashboard.
+      - key: OBJECT_STORAGE_BACKEND
+        value: platform_api.apps.resources.storage.S3Storage
+      - key: OBJECT_STORAGE_ENDPOINT
+        value: ""
+      - key: OBJECT_STORAGE_REGION
+        value: ""
+      - key: OBJECT_STORAGE_ACCESS_KEY
+        value: ""
+      - key: OBJECT_STORAGE_SECRET_KEY
+        value: ""
+      - key: OBJECT_STORAGE_BUCKET
+        value: mwalimu
+      # Embeddings (DeepSeek has no embeddings API — use OpenAI/compatible)
+      - key: EMBEDDING_PROVIDER_BACKEND
+        value: platform_api.apps.processing.embedding.openai_provider.OpenAICompatibleProvider
+      - key: EMBEDDING_API_KEY
+        value: ""
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: EMBEDDING_DIMENSIONS
+        value: "1536"
+
+  # ---- Celery worker (same image, different command) ---------------------
+  - type: worker
+    name: mwalimu-celery-worker
+    rootDir: platform_api
+    dockerfilePath: ./Dockerfile
+    startCommand: sh -c ".venv/bin/celery -A platform_api worker -Q default,ingestion -l info"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: platform_api.settings
+      - key: PYTHONPATH
+        value: /app/src
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mwalimu-postgres
+          property: connectionString
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: mwalimu-postgres
+          property: database
+      - key: DATABASE_USER
+        fromDatabase:
+          name: mwalimu-postgres
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: mwalimu-postgres
+          property: password
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: mwalimu-postgres
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: mwalimu-postgres
+          property: port
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: mwalimu-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: mwalimu-redis
+          property: connectionString
+      - key: OBJECT_STORAGE_BACKEND
+        value: platform_api.apps.resources.storage.S3Storage
+      - key: OBJECT_STORAGE_ENDPOINT
+        value: ""
+      - key: OBJECT_STORAGE_REGION
+        value: ""
+      - key: OBJECT_STORAGE_ACCESS_KEY
+        value: ""
+      - key: OBJECT_STORAGE_SECRET_KEY
+        value: ""
+      - key: OBJECT_STORAGE_BUCKET
+        value: mwalimu
+      - key: EMBEDDING_PROVIDER_BACKEND
+        value: platform_api.apps.processing.embedding.openai_provider.OpenAICompatibleProvider
+      - key: EMBEDDING_API_KEY
+        value: ""
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: EMBEDDING_DIMENSIONS
+        value: "1536"
+
+  # ---- Agent Service (FastAPI) -------------------------------------------
+  - type: web
+    name: mwalimu-agent-service
+    rootDir: agent_service
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DEFAULT_MODEL_PROVIDER
+        value: deepseek
+      - key: DEEPSEEK_API_KEY
+        value: ""          # set in dashboard
+      - key: DEEPSEEK_DEFAULT_MODEL
+        value: deepseek-chat
+      - key: DEEPSEEK_BASE_URL
+        value: https://api.deepseek.com/v1
+      - key: PLATFORM_API_BASE_URL
+        fromService:
+          type: web
+          name: mwalimu-platform-api
+          property: RENDER_EXTERNAL_URL
+      - key: PLATFORM_COMPLETION_URL
+        fromService:
+          type: web
+          name: mwalimu-platform-api
+          property: RENDER_EXTERNAL_URL
+      # Must match the platform-api secrets
+      - key: JWT_SECRET_KEY
+        value: change-me-agentservice-jwt
+      - key: INTERNAL_SERVICE_SECRET_KEY
+        value: change-me-internal-service
+      - key: AGENT_STREAM_JWT_SECRET_KEY
+        value: change-me-stream-jwt
+
+  # ---- Frontend (Next.js) ------------------------------------------------
+  - type: web
+    name: mwalimu-frontend
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    buildCommand: npm ci && npm run build
+    startCommand: sh -c "npx next start -p ${PORT:-3000}"
+    envVars:
+      # Inlined at build time. Verify property; if unavailable set the full URL.
+      - key: NEXT_PUBLIC_PLATFORM_API_BASE_URL
+        fromService:
+          type: web
+          name: mwalimu-platform-api
+          property: RENDER_EXTERNAL_URL
+
+  # ---- Data --------------------------------------------------------------
+  - type: postgres
+    name: mwalimu-postgres
+    databaseName: mwalimu
+    plan: basic-256mb   # enable pgvector via the CREATE EXTENSION in preDeployCommand
+
+  - type: redis
+    name: mwalimu-redis
+    plan: starter

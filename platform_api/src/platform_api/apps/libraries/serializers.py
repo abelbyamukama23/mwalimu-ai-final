@@ -8,7 +8,13 @@ from rest_framework import serializers
 from platform_api.apps.institutions.models import Institution
 from platform_api.apps.memberships.models import Membership, MembershipStatus
 
-from .models import Library, LibraryAccessPolicy, LibraryAccessRole, LibraryVisibility
+from .models import (
+    Library,
+    LibraryAccessPolicy,
+    LibraryAccessRole,
+    LibraryScopeType,
+    LibraryVisibility,
+)
 
 User = get_user_model()
 
@@ -26,8 +32,14 @@ class LibraryInstitutionSerializer(serializers.ModelSerializer):  # type: ignore
 class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
     """Serializer for library data."""
 
-    institution = LibraryInstitutionSerializer(read_only=True)
-    institution_id = serializers.UUIDField(write_only=True)
+    institution = LibraryInstitutionSerializer(read_only=True, allow_null=True)
+    institution_id = serializers.UUIDField(
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    scope_type = serializers.CharField(read_only=True)
+    is_personal = serializers.SerializerMethodField()
     visibility = serializers.ChoiceField(
         choices=LibraryVisibility.choices,
         required=False,
@@ -39,6 +51,8 @@ class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
         model = Library
         fields = [
             "id",
+            "scope_type",
+            "is_personal",
             "institution",
             "institution_id",
             "name",
@@ -49,35 +63,62 @@ class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "institution", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "scope_type",
+            "is_personal",
+            "institution",
+            "created_at",
+            "updated_at",
+        ]
 
-    def validate_institution_id(self, value: uuid.UUID) -> uuid.UUID:
-        """Ensure the referenced institution exists."""
-        if not Institution.objects.filter(pk=value).exists():
+    def get_is_personal(self, obj: Library) -> bool:
+        """Return True if the library is a personal knowledge space."""
+        return obj.scope_type == LibraryScopeType.PERSONAL
+
+    def validate_institution_id(self, value: uuid.UUID | None) -> uuid.UUID | None:
+        """Ensure the referenced institution exists if provided."""
+        if value is not None and not Institution.objects.filter(pk=value).exists():
             raise serializers.ValidationError("Institution not found.")
         return value
 
     def validate(self, attrs: dict[str, object]) -> dict[str, object]:
-        """Apply institution-scoped slug uniqueness validation."""
+        """Apply scope-specific slug uniqueness validation."""
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
         institution_id = attrs.get("institution_id")
         if self.instance is not None:
             institution_id = institution_id or self.instance.institution_id
 
         raw_slug = attrs.get("slug")
-        if raw_slug and institution_id:
+        if raw_slug:
             slug = str(raw_slug)
-            institution_id_value = uuid.UUID(str(institution_id))
-            queryset = Library.objects.filter(
-                institution_id=institution_id_value,
-                slug=slug,
-            )
-            if self.instance is not None:
-                queryset = queryset.exclude(pk=self.instance.pk)
-            if queryset.exists():
-                message = (
-                    "A library with this slug already exists in this institution."
+            if institution_id:
+                institution_id_value = uuid.UUID(str(institution_id))
+                queryset = Library.objects.filter(
+                    scope_type=LibraryScopeType.INSTITUTION,
+                    institution_id=institution_id_value,
+                    slug=slug,
                 )
-                raise serializers.ValidationError({"slug": message})
+                if self.instance is not None:
+                    queryset = queryset.exclude(pk=self.instance.pk)
+                if queryset.exists():
+                    message = (
+                        "A library with this slug already exists in this institution."
+                    )
+                    raise serializers.ValidationError({"slug": message})
+            elif user and getattr(user, "is_authenticated", False):
+                queryset = Library.objects.filter(
+                    scope_type=LibraryScopeType.PERSONAL,
+                    owner=user,
+                    slug=slug,
+                )
+                if self.instance is not None:
+                    queryset = queryset.exclude(pk=self.instance.pk)
+                if queryset.exists():
+                    message = "You already have a personal library with this slug."
+                    raise serializers.ValidationError({"slug": message})
 
         return attrs
 

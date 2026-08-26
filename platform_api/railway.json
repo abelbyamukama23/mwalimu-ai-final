@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE"
+  },
+  "deploy": {
+    "startCommand": "sh -c \".venv/bin/gunicorn platform_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 --graceful-timeout 30\"",
+    "preDeployCommand": "sh -c \"/app/.venv/bin/python manage.py migrate --noinput && /app/.venv/bin/python manage.py collectstatic --noinput\"",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}

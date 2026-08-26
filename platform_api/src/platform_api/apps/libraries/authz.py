@@ -13,12 +13,18 @@ from platform_api.apps.memberships.models import (
 )
 from platform_api.apps.users.models import User
 
-from .models import Library, LibraryAccessPolicy, LibraryAccessRole, LibraryVisibility
+from .models import (
+    Library,
+    LibraryAccessPolicy,
+    LibraryAccessRole,
+    LibraryScopeType,
+    LibraryVisibility,
+)
 
 
 def is_institution_admin(user: User | Any, institution_id: Any) -> bool:
     """Return True if the user is an active administrator of the institution."""
-    if not isinstance(user, User):
+    if not isinstance(user, User) or not institution_id:
         return False
     return Membership.objects.filter(
         user=user,
@@ -30,7 +36,7 @@ def is_institution_admin(user: User | Any, institution_id: Any) -> bool:
 
 def is_active_institution_member(user: User | Any, institution_id: Any) -> bool:
     """Return True if the user has any active membership in the institution."""
-    if not isinstance(user, User):
+    if not isinstance(user, User) or not institution_id:
         return False
     return Membership.objects.filter(
         user=user,
@@ -56,9 +62,14 @@ def has_library_role(
 def can_access_library(user: User | Any, library: Library) -> bool:
     """Return True if the user may view the library.
 
-    Access is granted to institution administrators, users with an explicit
-    access policy, or members of discoverable libraries.
+    For personal libraries, access is granted strictly to the owner.
+    For institutional libraries, access is granted to institution
+    administrators, users with an explicit access policy, or active members of
+    discoverable libraries.
     """
+    if library.scope_type == LibraryScopeType.PERSONAL:
+        return bool(user and getattr(user, "id", None) == library.owner_id)
+
     if is_institution_admin(user, library.institution_id):
         return True
     if has_library_role(user, library):
@@ -69,7 +80,15 @@ def can_access_library(user: User | Any, library: Library) -> bool:
 
 
 def can_manage_library(user: User | Any, library: Library) -> bool:
-    """Return True if the user may manage the library and its policies."""
+    """Return True if the user may manage the library and its policies.
+
+    For personal libraries, management is granted strictly to the owner.
+    For institutional libraries, management is granted to institution
+    administrators or library administrators with an explicit policy.
+    """
+    if library.scope_type == LibraryScopeType.PERSONAL:
+        return bool(user and getattr(user, "id", None) == library.owner_id)
+
     if is_institution_admin(user, library.institution_id):
         return True
     return has_library_role(

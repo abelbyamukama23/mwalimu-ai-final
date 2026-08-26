@@ -76,6 +76,11 @@ yarn-error.log*
 *.tfstate.*
 .terraform/
 
+# Redis / Memurai
+dump.rdb
+memurai-log.txt
+
 # Misc
 *.bak
 *.tmp
+

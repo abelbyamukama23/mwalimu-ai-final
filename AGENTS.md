@@ -16,6 +16,7 @@ This document encodes the engineering principles, service boundaries, and conven
 | Asynchronous processing | Celery + Redis |
 | Original resource files | Object storage |
 | LLM routing | Model Gateway (provider-neutral) |
+| Frontend | Next.js 16 + TypeScript + Tailwind CSS v4 |
 
 ## Service Boundaries
 
@@ -70,7 +71,7 @@ This document encodes the engineering principles, service boundaries, and conven
 ```
 ├── platform_api/        # Django + DRF system of record
 ├── agent_service/       # FastAPI agent runtime
-├── frontend/            # Future web frontend (not implemented)
+├── frontend/            # Next.js + TypeScript + Tailwind CSS web frontend
 ├── docs/
 │   ├── architecture/
 │   │   ├── system-architecture.md
@@ -87,4 +88,4 @@ This document encodes the engineering principles, service boundaries, and conven
 
 ## Current Phase
 
-The foundation phase (Slice 1: Identity/Institution/Membership, Slice 2: Library/Library Access Policy, and Slice 3: Resource/Object Storage) is implemented and under review. Do not implement ingestion, chunking, embeddings, Knowledge Gateway, connectors, the Agent Service runtime, MCP servers, Celery ingestion, or the frontend until the Resource domain is reviewed and the next slice is explicitly authorized.
+Slices 1–4 are implemented in the Platform API; Slices 5–7 (Knowledge Gateway, Agent Execution Runtime, Durable Execution) are designed and partially implemented. Phase 0 of the Next.js frontend (design tokens, primitives, shells, routing, and the /chat/new representative screen) is in progress. Do not implement connectors, MCP servers, or additional Agent Service runtime expansion unless explicitly authorized.

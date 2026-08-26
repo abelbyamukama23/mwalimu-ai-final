@@ -175,9 +175,7 @@ def library_admin_policy_a(user_a: "User", library_a: Library) -> LibraryAccessP
 
 
 @pytest.fixture
-def library_teacher_policy_a(
-    user_a: "User", library_a: Library
-) -> LibraryAccessPolicy:
+def library_teacher_policy_a(user_a: "User", library_a: Library) -> LibraryAccessPolicy:
     """Return a teacher access policy for User A on Library A."""
     return LibraryAccessPolicy.objects.create(
         library=library_a,
@@ -187,9 +185,7 @@ def library_teacher_policy_a(
 
 
 @pytest.fixture
-def library_student_policy_a(
-    user_a: "User", library_a: Library
-) -> LibraryAccessPolicy:
+def library_student_policy_a(user_a: "User", library_a: Library) -> LibraryAccessPolicy:
     """Return a student access policy for User A on Library A."""
     return LibraryAccessPolicy.objects.create(
         library=library_a,
@@ -199,9 +195,66 @@ def library_student_policy_a(
 
 
 @pytest.fixture(autouse=True)
-def _fake_object_storage(settings) -> None:
-    """Use the in-memory fake storage backend for all tests."""
+def _test_settings(settings) -> None:
+    """Configure test defaults for storage, embeddings, and celery."""
     settings.OBJECT_STORAGE_BACKEND = (
         "platform_api.apps.resources.fake_storage.FakeStorage"
     )
+    settings.EMBEDDING_PROVIDER_BACKEND = (
+        "platform_api.apps.processing.embedding.fake_provider.FakeEmbeddingProvider"
+    )
+    settings.CELERY_TASK_ALWAYS_EAGER = True
+    settings.CELERY_TASK_EAGER_PROPAGATES = True
+    # The test client talks over plain http; relax the Secure flag so cookies
+    # round-trip. Production defaults remain Secure=True.
+    settings.REFRESH_COOKIE_SECURE = False
+    settings.CSRF_COOKIE_SECURE = False
     FakeStorage.clear()
+
+
+@pytest.fixture
+def txt_bytes() -> bytes:
+    """Return sample plain-text content."""
+    return (
+        b"Introduction to Biology\n\n"
+        b"Biology is the study of living organisms and their "
+        b"interactions with the environment.\n\n"
+        b"Cell Structure\n\n"
+        b"Cells are the basic structural and functional units of "
+        b"all living organisms."
+    )
+
+
+@pytest.fixture
+def pdf_bytes() -> bytes:
+    """Return sample PDF content."""
+    from io import BytesIO
+
+    import pypdf
+
+    writer = pypdf.PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    stream = BytesIO()
+    writer.write(stream)
+    return stream.getvalue()
+
+
+@pytest.fixture
+def docx_bytes() -> bytes:
+    """Return sample DOCX content with headings and paragraphs."""
+    from io import BytesIO
+
+    import docx
+
+    doc = docx.Document()
+    doc.add_heading("Chapter 1: Quantum Physics", level=1)
+    doc.add_paragraph(
+        "Quantum physics is the study of matter and energy at the "
+        "most fundamental level."
+    )
+    doc.add_paragraph("A central concept is wave-particle duality.")
+    doc.add_heading("Chapter 2: Thermodynamics", level=1)
+    doc.add_paragraph("Thermodynamics deals with heat, work, and temperature.")
+    stream = BytesIO()
+    doc.save(stream)
+    return stream.getvalue()

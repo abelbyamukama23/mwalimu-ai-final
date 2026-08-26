@@ -419,9 +419,7 @@ def test_cross_institution_policy_manipulation_prevented(
     library_b,
 ) -> None:
     """An admin of Institution A cannot manage policies for Institution B's library."""
-    url = reverse(
-        "library-accesspolicy-list", kwargs={"library_pk": str(library_b.pk)}
-    )
+    url = reverse("library-accesspolicy-list", kwargs={"library_pk": str(library_b.pk)})
     response = admin_client_a.post(
         url,
         {"user_id": str(user_b.pk), "role": LibraryAccessRole.ADMINISTRATOR},
@@ -667,7 +665,9 @@ def test_library_slug_can_be_reused_across_institutions(
     institution_b,
 ) -> None:
     """The same slug may be used in different institutions."""
-    Institution.objects.filter(pk=institution_b.pk).update(status=InstitutionStatus.ACTIVE)
+    Institution.objects.filter(pk=institution_b.pk).update(
+        status=InstitutionStatus.ACTIVE
+    )
     Membership.objects.create(
         user=admin_membership_a.user,
         institution=institution_b,

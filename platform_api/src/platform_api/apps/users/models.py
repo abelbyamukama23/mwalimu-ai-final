@@ -93,3 +93,114 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Normalize the email address before validation."""
         super().clean()
         self.email = self.email.strip().lower() if self.email else ""
+
+
+class UserProfile(models.Model):
+    """User profile metadata separate from the core authentication identity."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="profile",
+    )
+    display_name = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        help_text="User's public/chosen display name.",
+    )
+    avatar_url = models.URLField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="URL pointing to the user's avatar image.",
+    )
+    phone_number = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        help_text="Optional contact phone number.",
+    )
+    bio = models.TextField(
+        blank=True,
+        default="",
+        help_text="Short biographical summary or teaching/learning focus.",
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """Model metadata."""
+
+        db_table = "users_profile"
+        ordering = ["-created_at"]
+        verbose_name = "user profile"
+        verbose_name_plural = "user profiles"
+
+    def __str__(self) -> str:
+        """Return display name or user email."""
+        return self.display_name or str(self.user)
+
+
+class PedagogicalStyle(models.TextChoices):
+    """Pedagogical explanation style."""
+
+    INTUITIVE = "intuitive", "Intuitive & Analogy-driven"
+    FORMAL = "formal", "Formal & Academic"
+    SOCRATIC = "socratic", "Socratic & Inquiring"
+
+
+class ExplanationDepth(models.TextChoices):
+    """Explanation depth level."""
+
+    CONCISE = "concise", "Concise Summary"
+    STANDARD = "standard", "Standard Explanation"
+    IN_DEPTH = "in_depth", "In-depth / Deep Dive"
+
+
+class UserPreference(models.Model):
+    """User pedagogical and reasoning preferences for AI interactions."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="preferences",
+    )
+    pedagogical_style = models.CharField(
+        max_length=20,
+        choices=PedagogicalStyle.choices,
+        default=PedagogicalStyle.INTUITIVE,
+        help_text="Preferred style for explanations.",
+    )
+    explanation_depth = models.CharField(
+        max_length=20,
+        choices=ExplanationDepth.choices,
+        default=ExplanationDepth.STANDARD,
+        help_text="Preferred depth/detail level for explanations.",
+    )
+    response_language = models.CharField(
+        max_length=10,
+        default="en",
+        help_text="Target language for AI explanations (e.g., 'en', 'sw').",
+    )
+    cross_session_memory = models.BooleanField(
+        default=True,
+        help_text="Allow Mwalimu to reference relevant concepts across chat sessions.",
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """Model metadata."""
+
+        db_table = "users_preference"
+        ordering = ["-created_at"]
+        verbose_name = "user preference"
+        verbose_name_plural = "user preferences"
+
+    def __str__(self) -> str:
+        """Return string representation."""
+        return f"Preferences for {self.user}"
+

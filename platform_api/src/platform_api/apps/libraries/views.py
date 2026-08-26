@@ -19,17 +19,22 @@ from platform_api.apps.memberships.models import (
 from platform_api.apps.users.models import User
 
 from .authz import can_manage_library, is_institution_admin
-from .models import Library, LibraryAccessPolicy, LibraryStatus, LibraryVisibility
+from .models import (
+    Library,
+    LibraryAccessPolicy,
+    LibraryScopeType,
+    LibraryStatus,
+    LibraryVisibility,
+)
 from .serializers import LibraryAccessPolicySerializer, LibrarySerializer
 
 
 class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
     """View set for library management.
 
-    Institution administrators may create, update, and delete libraries within
-    their institution. Library administrators may update and delete libraries
-    according to policy. Members may view discoverable libraries and libraries
-    for which they hold an explicit access policy.
+    Supports both personal libraries (owned by individual users) and
+    institutional libraries (owned by institutions and managed by
+    institution administrators).
     """
 
     serializer_class = LibrarySerializer
@@ -39,13 +44,18 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
     def get_queryset(self) -> QuerySet[Library]:
         """Return libraries the user is authorized to view.
 
-        The queryset is scoped to the user's institution memberships and
-        explicit library grants. Restricted libraries are never leaked to
-        users without an explicit policy.
+        Returns personal libraries owned by the user, plus institutional
+        libraries authorized through administrator memberships, discoverability,
+        or explicit access policies.
         """
         user = self.request.user
         if not isinstance(user, User):
             return Library.objects.none()
+
+        personal_q = models.Q(
+            scope_type=LibraryScopeType.PERSONAL,
+            owner=user,
+        )
 
         admin_institution_ids = Membership.objects.filter(
             user=user,
@@ -62,26 +72,48 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             user=user,
         ).values_list("library_id", flat=True)
 
-        return Library.objects.filter(status=LibraryStatus.ACTIVE).filter(
+        institutional_q = models.Q(
+            scope_type=LibraryScopeType.INSTITUTION,
+        ) & (
             models.Q(institution_id__in=admin_institution_ids)
             | models.Q(
                 institution_id__in=member_institution_ids,
                 visibility=LibraryVisibility.DISCOVERABLE,
             )
-            | models.Q(id__in=granted_library_ids),
-        ).order_by("-created_at")
+            | models.Q(id__in=granted_library_ids)
+        )
+
+        return (
+            Library.objects.filter(status=LibraryStatus.ACTIVE)
+            .filter(personal_q | institutional_q)
+            .order_by("-created_at")
+        )
 
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
-        """Create the library under the requested institution.
+        """Create a personal or institutional library.
 
-        Only institution administrators may create libraries.
+        When institution_id is provided, validates that the user is an active
+        administrator of the institution. When institution_id is omitted,
+        creates a personal library owned by request.user.
         """
         institution_id = serializer.validated_data.get("institution_id")
-        if not is_institution_admin(self.request.user, institution_id):
-            raise PermissionDenied(
-                "You do not have permission to create a library in this institution.",
+        if institution_id:
+            if not is_institution_admin(self.request.user, institution_id):
+                raise PermissionDenied(
+                    "You do not have permission to create a library in "
+                    "this institution.",
+                )
+            serializer.save(
+                scope_type=LibraryScopeType.INSTITUTION,
+                institution_id=institution_id,
+                owner=None,
             )
-        serializer.save()
+        else:
+            serializer.save(
+                scope_type=LibraryScopeType.PERSONAL,
+                owner=self.request.user,
+                institution=None,
+            )
 
     def update(self, request: Request, *args: object, **kwargs: object) -> Response:
         """Only library managers may update a library."""

@@ -1,26 +1,9 @@
-"""AgentRun — explicit architectural concept for an agent execution.
+"""Top-level re-export of AgentRun from domain layer."""
 
-An ``AgentRun`` represents a single invocation of the agent runtime. It
-carries the ``ExecutionContext`` and any runtime identifiers needed to
-correlate work with the Platform API.
+from agent_service.domain.run import (
+    AgentRun,
+    InvalidStateTransitionError,
+    RunStatus,
+)
 
-Full implementation will be added during Agent Service development.
-"""
-
-from __future__ import annotations
-
-from pydantic import BaseModel, Field
-
-from agent_service.context import ExecutionContext
-
-
-class AgentRun(BaseModel):
-    """A single agent execution instance.
-
-    Attributes:
-        run_id: Unique identifier for this run.
-        context: Scoped execution context received from the Platform API.
-    """
-
-    run_id: str = Field(..., description="Unique run identifier")
-    context: ExecutionContext
+__all__ = ["AgentRun", "InvalidStateTransitionError", "RunStatus"]

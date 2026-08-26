@@ -24,6 +24,7 @@ def _max_upload_size() -> int:
     """Return the configured maximum upload size in bytes."""
     return int(getattr(settings, "RESOURCE_MAX_UPLOAD_SIZE", DEFAULT_MAX_UPLOAD_SIZE))
 
+
 _CONTENT_TYPE_MAP: dict[str, tuple[str, ...]] = {
     ResourceType.PDF: ("application/pdf",),
     ResourceType.DOCX: (
@@ -93,9 +94,7 @@ def _validate_docx_signature(content: bytes) -> None:
 def _validate_txt_signature(content: bytes, declared_content_type: str) -> None:
     """Verify the file signature of a plain-text file."""
     if not declared_content_type.startswith("text/"):
-        raise ResourceValidationError(
-            {"file": "Invalid content type for text file."}
-        )
+        raise ResourceValidationError({"file": "Invalid content type for text file."})
     try:
         content.decode("utf-8")
     except UnicodeDecodeError as exc:

@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/*
+ * Mwalimu design tokens — extracted from the Figma "Mwalimu AI — Product Prototype"
+ * design system (file hWA2DJhdJA9R5jyqyl4xUa). Locked type scale: 28/22/17/15/14/13/12/11.
+ * Radius scale per product spec: 8 compact / 12 controls / 16 cards & dialogs / 24 composer.
+ */
+@theme {
+  /* Surfaces */
+  --color-canvas: #faf7f2;
+  --color-surface: #ffffff;
+  --color-subtle: #f2eee6;
+  --color-sidebar: #f4f1ea;
+  --color-active: #e6efec;
+
+  /* Emerald primary (trust/intelligence) */
+  --color-accent: #1f5c52;
+  --color-accent-hover: #184a41;
+  --color-accent-subtle: #e6efec;
+
+  /* Ink */
+  --color-ink: #1a1a18;
+  --color-ink-secondary: #6b6b63;
+  --color-ink-tertiary: #9a968a;
+
+  /* Lines */
+  --color-border: #e5e1d8;
+  --color-border-strong: #d8d3c6;
+
+  /* Terracotta accent (local warmth) */
+  --color-terracotta: #d97b3f;
+
+  /* Status badges */
+  --color-success-bg: #e6f2ea;
+  --color-success-fg: #2f7a4f;
+  --color-warning-bg: #fbf0dd;
+  --color-warning-fg: #b8791f;
+  --color-info-bg: #e5f0f5;
+  --color-info-fg: #2c6e8c;
+  --color-accentsoft-bg: #fbebe0;
+  --color-accentsoft-fg: #d97b3f;
+
+  /* Institution console (dark) */
+  --color-console-bg: #1c1917;
+  --color-console-hover: #292524;
+  --color-console-fg: #d6d3d1;
+  --color-console-muted: #78716c;
+
+  /* Locked type scale */
+  --text-11: 0.6875rem;
+  --text-11--line-height: 1.21;
+  --text-12: 0.75rem;
+  --text-12--line-height: 1.21;
+  --text-13: 0.8125rem;
+  --text-13--line-height: 1.23;
+  --text-14: 0.875rem;
+  --text-14--line-height: 1.35;
+  --text-15: 0.9375rem;
+  --text-15--line-height: 1.4;
+  --text-17: 1.0625rem;
+  --text-17--line-height: 1.35;
+  --text-22: 1.375rem;
+  --text-22--line-height: 1.27;
+  --text-28: 1.75rem;
+  --text-28--line-height: 1.21;
+
+  /* Radius scale: 8 compact / 12 controls / 16 cards & dialogs / 24 composer */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --shadow-composer: 0 2px 8px rgb(0 0 0 / 0.06);
+  --shadow-overlay: 0 8px 30px rgb(0 0 0 / 0.12);
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-rise-in: rise-in 150ms ease-out;
+  --animate-scale-in: scale-in 200ms ease-out;
+  --animate-slide-in-right: slide-in-right 200ms ease-out;
+  --animate-status-pulse: status-pulse 1.6s ease-in-out infinite;
+  --animate-fade-out: fade-out 150ms ease-in forwards;
+  --animate-scale-out: scale-out 150ms ease-in forwards;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes slide-in-right {
+    from { opacity: 0.6; transform: translateX(24px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes slide-in-left {
+    from { opacity: 0.6; transform: translateX(-24px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  @keyframes fade-out {
+    to { opacity: 0; }
+  }
+  @keyframes scale-out {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: scale(0.98); }
+  }
+}
+
+/* Emerald keyboard focus ring — never remove focus indicators. */
+@utility focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas font-sans text-14 text-ink antialiased;
+  }
+
+  ::selection {
+    background: var(--color-active);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

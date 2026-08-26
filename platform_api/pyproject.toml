@@ -21,26 +21,26 @@ dependencies = [
     "drf-spectacular>=0.28,<0.29",
     "django-cors-headers>=4.7,<5.0",
     "django-environ>=0.12,<1.0",
-
     # PostgreSQL / pgvector
     "psycopg[binary]>=3.2,<4.0",
     "pgvector>=0.3,<0.4",
-
     # Asynchronous processing
     "celery[redis]>=5.5,<6.0",
     "redis>=5.3,<6.0",
-
     # Validation, settings, and HTTP clients
     "pydantic>=2.11,<3.0",
     "pydantic-settings>=2.8,<3.0",
     "httpx>=0.28,<0.29",
-
     # Static files and WSGI server
     "whitenoise>=6.9,<7.0",
     "gunicorn>=23.0,<24.0",
-
     # Object storage
     "boto3>=1.37,<2.0",
+    # Document extraction
+    "pypdf>=5.0,<6.0",
+    "python-docx>=1.1,<2.0",
+    "cryptography>=44.0,<45.0",
+    "jsonschema>=4.23,<5.0",
 ]
 
 [project.optional-dependencies]
@@ -115,8 +115,15 @@ module = [
     "boto3.*",
     "botocore.*",
     "celery.*",
+    "pypdf.*",
+    "docx.*",
 ]
 ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "platform_api.settings"
+
+[dependency-groups]
+dev = [
+    "types-jsonschema>=4.26.0.20260518",
+]

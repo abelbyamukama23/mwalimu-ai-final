@@ -9,15 +9,19 @@ router = DefaultRouter()
 router.register(r"libraries", LibraryViewSet, basename="library")
 
 # Nested access-policy routes under libraries.
-access_policy_list = LibraryAccessPolicyViewSet.as_view({
-    "get": "list",
-    "post": "create",
-})
-access_policy_detail = LibraryAccessPolicyViewSet.as_view({
-    "get": "retrieve",
-    "patch": "partial_update",
-    "delete": "destroy",
-})
+access_policy_list = LibraryAccessPolicyViewSet.as_view(
+    {
+        "get": "list",
+        "post": "create",
+    }
+)
+access_policy_detail = LibraryAccessPolicyViewSet.as_view(
+    {
+        "get": "retrieve",
+        "patch": "partial_update",
+        "delete": "destroy",
+    }
+)
 
 urlpatterns = [
     *router.urls,

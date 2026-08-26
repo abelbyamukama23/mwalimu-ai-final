@@ -807,10 +807,9 @@ Before implementation begins, reviewers should confirm:
       reprocessing model.
 - [ ] 1536-dim `text-embedding-3-small` + cosine + HNSW is the sanctioned
       default embedding configuration.
-- [ ] Empty-extraction behavior (§5): zero-chunk `READY` vs.
-      `EMPTY_EXTRACTION` failure — pick one.
-- [ ] A shared embedding cache remains out of scope (§17).
-- [ ] No implementation code is written until this design is approved.
+- [x] Empty-extraction behavior (§5): resolved as `FAILED` + `error_code=EMPTY_EXTRACTION` (never `READY`).
+- [x] A shared embedding cache remains out of scope (§17).
+- [x] Slice 4 design approved and implemented.
 
 **STOP.** This is a design deliverable only; Slice 4 code awaits design review.
 

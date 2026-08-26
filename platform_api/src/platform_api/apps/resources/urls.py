@@ -4,18 +4,24 @@ from django.urls import path
 
 from .views import ResourceViewSet
 
-resource_list = ResourceViewSet.as_view({
-    "get": "list",
-    "post": "create",
-})
-resource_detail = ResourceViewSet.as_view({
-    "get": "retrieve",
-    "patch": "partial_update",
-    "delete": "destroy",
-})
-resource_download = ResourceViewSet.as_view({
-    "get": "download",
-})
+resource_list = ResourceViewSet.as_view(
+    {
+        "get": "list",
+        "post": "create",
+    }
+)
+resource_detail = ResourceViewSet.as_view(
+    {
+        "get": "retrieve",
+        "patch": "partial_update",
+        "delete": "destroy",
+    }
+)
+resource_download = ResourceViewSet.as_view(
+    {
+        "get": "download",
+    }
+)
 
 urlpatterns = [
     path(
