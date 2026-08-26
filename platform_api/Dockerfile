@@ -17,4 +17,7 @@ COPY src ./src
 EXPOSE 8000
 
 # Railway injects PORT; the platform serves HTTP on that port.
-CMD ["sh", "-c", ".venv/bin/gunicorn platform_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 --graceful-timeout 30"]
+# Migrations + static collection run on every start (idempotent), so no
+# external pre-deploy step is required and the worker (separate command) won't
+# conflict.
+CMD ["sh", "-c", ".venv/bin/python manage.py migrate --noinput && .venv/bin/python manage.py collectstatic --noinput && .venv/bin/gunicorn platform_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 --graceful-timeout 30"]
