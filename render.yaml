@@ -1,25 +1,28 @@
 # Render Blueprint for the Mwalimu stack (monorepo)
 #
-# Apps are independent root directories; Render builds each service from its own
-# rootDir/Dockerfile. Push this repo to GitHub, then create a Blueprint in Render
-# pointing at it (New + Blueprint, select this repo) or `render blueprint launch`.
+# Each app is an independent root directory; Render builds each from a Dockerfile
+# via runtime: docker. dockerfilePath is REPO-relative; dockerContext is the
+# service dir so the COPY paths in each Dockerfile resolve.
 #
-# VERIFY before launching (Render schema occasionally renames properties):
-#   - Postgres fromDatabase property names: database/host/password/port/user/connectionString
-#   - Redis connection property name: connectionString
-#   - Web-service public URL property (used below): RENDER_EXTERNAL_URL
-#     (if unavailable, set the URL vars manually to https://<service>.onrender.com)
+# NO variable interpolation is supported, so cross-service URLs use
+# fromService.envVarKey: RENDER_EXTERNAL_URL (Render's injected public URL).
+#
+# The 3 shared secrets must be identical on platform-api and agent-service —
+# they are `sync: false` so Render prompts at creation; enter the SAME value per pair.
 services:
-  # ---- System of record + orchestration ----------------------------------
+  # ---- System of record + orchestration (Django) -------------------------
   - type: web
     name: mwalimu-platform-api
+    runtime: docker
     rootDir: platform_api
-    dockerfilePath: ./Dockerfile
+    dockerContext: platform_api
+    dockerfilePath: platform_api/Dockerfile
     plan: starter
-    preDeployCommand: >-
-      sh -c "pg_isready && psql \"$DATABASE_URL\" -c 'CREATE EXTENSION IF NOT EXISTS vector;' &&
-             .venv/bin/python manage.py migrate --noinput &&
-             .venv/bin/python manage.py collectstatic --noinput"
+    healthCheckPath: /
+    dockerCommand: >-
+      sh -c ".venv/bin/python manage.py migrate --noinput &&
+             .venv/bin/python manage.py collectstatic --noinput &&
+             .venv/bin/gunicorn platform_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: platform_api.settings
@@ -63,33 +66,32 @@ services:
           property: port
       - key: CELERY_BROKER_URL
         fromService:
-          type: redis
+          type: keyvalue
           name: mwalimu-redis
           property: connectionString
       - key: CELERY_RESULT_BACKEND
         fromService:
-          type: redis
+          type: keyvalue
           name: mwalimu-redis
           property: connectionString
-      # Agent Service URL (verify property; may need https:// + RENDER_EXTERNAL_URL)
       - key: AGENT_SERVICE_BASE_URL
         fromService:
           type: web
           name: mwalimu-agent-service
-          property: RENDER_EXTERNAL_URL
+          envVarKey: RENDER_EXTERNAL_URL
       - key: AGENT_SERVICE_PUBLIC_BASE_URL
         fromService:
           type: web
           name: mwalimu-agent-service
-          property: RENDER_EXTERNAL_URL
-      # Shared secrets that MUST match the agent service (set the same value on both)
+          envVarKey: RENDER_EXTERNAL_URL
+      # Shared secrets — set the SAME value on both platform-api and agent-service
       - key: AGENT_SERVICE_JWT_SECRET_KEY
-        value: change-me-agentservice-jwt
+        sync: false
       - key: INTERNAL_SERVICE_SECRET_KEY
-        value: change-me-internal-service
+        sync: false
       - key: AGENT_STREAM_JWT_SECRET_KEY
-        value: change-me-stream-jwt
-      # Object storage (S3-compatible). No R2/S3 plugin field here — set in dashboard.
+        sync: false
+      # Object storage (S3-compatible) — set in dashboard
       - key: OBJECT_STORAGE_BACKEND
         value: platform_api.apps.resources.storage.S3Storage
       - key: OBJECT_STORAGE_ENDPOINT
@@ -106,18 +108,22 @@ services:
       - key: EMBEDDING_PROVIDER_BACKEND
         value: platform_api.apps.processing.embedding.openai_provider.OpenAICompatibleProvider
       - key: EMBEDDING_API_KEY
-        value: ""
+        sync: false
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: EMBEDDING_DIMENSIONS
         value: "1536"
 
-  # ---- Celery worker (same image, different command) ---------------------
+  # ---- Celery worker (same image, background command) --------------------
   - type: worker
     name: mwalimu-celery-worker
+    runtime: docker
     rootDir: platform_api
-    dockerfilePath: ./Dockerfile
-    startCommand: sh -c ".venv/bin/celery -A platform_api worker -Q default,ingestion -l info"
+    dockerContext: platform_api
+    dockerfilePath: platform_api/Dockerfile
+    plan: starter
+    dockerCommand: >-
+      sh -c ".venv/bin/celery -A platform_api worker -Q default,ingestion -l info"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: platform_api.settings
@@ -151,12 +157,12 @@ services:
           property: port
       - key: CELERY_BROKER_URL
         fromService:
-          type: redis
+          type: keyvalue
           name: mwalimu-redis
           property: connectionString
       - key: CELERY_RESULT_BACKEND
         fromService:
-          type: redis
+          type: keyvalue
           name: mwalimu-redis
           property: connectionString
       - key: OBJECT_STORAGE_BACKEND
@@ -174,7 +180,7 @@ services:
       - key: EMBEDDING_PROVIDER_BACKEND
         value: platform_api.apps.processing.embedding.openai_provider.OpenAICompatibleProvider
       - key: EMBEDDING_API_KEY
-        value: ""
+        sync: false
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: EMBEDDING_DIMENSIONS
@@ -183,8 +189,11 @@ services:
   # ---- Agent Service (FastAPI) -------------------------------------------
   - type: web
     name: mwalimu-agent-service
+    runtime: docker
     rootDir: agent_service
-    dockerfilePath: ./Dockerfile
+    dockerContext: agent_service
+    dockerfilePath: agent_service/Dockerfile
+    plan: starter
     healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
@@ -194,7 +203,7 @@ services:
       - key: DEFAULT_MODEL_PROVIDER
         value: deepseek
       - key: DEEPSEEK_API_KEY
-        value: ""          # set in dashboard
+        sync: false
       - key: DEEPSEEK_DEFAULT_MODEL
         value: deepseek-chat
       - key: DEEPSEEK_BASE_URL
@@ -203,41 +212,46 @@ services:
         fromService:
           type: web
           name: mwalimu-platform-api
-          property: RENDER_EXTERNAL_URL
+          envVarKey: RENDER_EXTERNAL_URL
       - key: PLATFORM_COMPLETION_URL
         fromService:
           type: web
           name: mwalimu-platform-api
-          property: RENDER_EXTERNAL_URL
-      # Must match the platform-api secrets
+          envVarKey: RENDER_EXTERNAL_URL
+      # Must match platform-api (same value)
       - key: JWT_SECRET_KEY
-        value: change-me-agentservice-jwt
+        sync: false
       - key: INTERNAL_SERVICE_SECRET_KEY
-        value: change-me-internal-service
+        sync: false
       - key: AGENT_STREAM_JWT_SECRET_KEY
-        value: change-me-stream-jwt
+        sync: false
 
   # ---- Frontend (Next.js) ------------------------------------------------
   - type: web
     name: mwalimu-frontend
+    runtime: docker
     rootDir: frontend
-    dockerfilePath: ./Dockerfile
-    buildCommand: npm ci && npm run build
-    startCommand: sh -c "npx next start -p ${PORT:-3000}"
+    dockerContext: frontend
+    dockerfilePath: frontend/Dockerfile
+    plan: starter
+    healthCheckPath: /
     envVars:
-      # Inlined at build time. Verify property; if unavailable set the full URL.
+      # Inlined at build time (NEXT_PUBLIC_); Render injects the referenced URL into the build env.
       - key: NEXT_PUBLIC_PLATFORM_API_BASE_URL
         fromService:
           type: web
           name: mwalimu-platform-api
-          property: RENDER_EXTERNAL_URL
+          envVarKey: RENDER_EXTERNAL_URL
 
   # ---- Data --------------------------------------------------------------
   - type: postgres
     name: mwalimu-postgres
     databaseName: mwalimu
-    plan: basic-256mb   # enable pgvector via the CREATE EXTENSION in preDeployCommand
+    plan: basic-256mb
 
-  - type: redis
+  - type: keyvalue
     name: mwalimu-redis
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
     plan: starter
