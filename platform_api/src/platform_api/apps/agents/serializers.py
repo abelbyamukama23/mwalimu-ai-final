@@ -11,7 +11,11 @@ from platform_api.apps.libraries.authz import (
     can_access_library,
     is_active_institution_member,
 )
-from platform_api.apps.libraries.models import Library, LibraryStatus
+from platform_api.apps.libraries.models import (
+    Library,
+    LibraryScopeType,
+    LibraryStatus,
+)
 from platform_api.apps.memberships.models import Membership, MembershipStatus
 
 from .models import (
@@ -91,15 +95,6 @@ class SessionCreateRequestSerializer(serializers.Serializer[dict[str, Any]]):
 
         primary_library_id = attrs.get("primary_library_id")
         if primary_library_id is not None:
-            if institution is None:
-                raise serializers.ValidationError(
-                    {
-                        "primary_library_id": (
-                            "A memberless session has no authorized institution "
-                            "available for library access."
-                        )
-                    }
-                )
             try:
                 library = Library.objects.get(
                     pk=primary_library_id, status=LibraryStatus.ACTIVE
@@ -109,23 +104,40 @@ class SessionCreateRequestSerializer(serializers.Serializer[dict[str, Any]]):
                     {"primary_library_id": "Library not found or inactive."}
                 ) from None
 
-            if library.institution_id != institution.pk:
-                raise serializers.ValidationError(
-                    {
-                        "primary_library_id": (
-                            "Library does not belong to the selected institution."
-                        )
-                    }
-                )
-
-            if not can_access_library(user, library):
-                raise serializers.ValidationError(
-                    {
-                        "primary_library_id": (
-                            "You do not have permission to access this library."
-                        )
-                    }
-                )
+            if library.scope_type == LibraryScopeType.PERSONAL:
+                if library.owner_id != user.id:
+                    raise serializers.ValidationError(
+                        {
+                            "primary_library_id": (
+                                "You do not have permission to access this personal library."
+                            )
+                        }
+                    )
+            else:
+                if institution is None:
+                    raise serializers.ValidationError(
+                        {
+                            "primary_library_id": (
+                                "An active institution membership is required to access institutional libraries."
+                            )
+                        }
+                    )
+                if library.institution_id != institution.pk:
+                    raise serializers.ValidationError(
+                        {
+                            "primary_library_id": (
+                                "Library does not belong to the selected institution."
+                            )
+                        }
+                    )
+                if not can_access_library(user, library):
+                    raise serializers.ValidationError(
+                        {
+                            "primary_library_id": (
+                                "You do not have permission to access this library."
+                            )
+                        }
+                    )
 
             attrs["_resolved_primary_library"] = library
         else:

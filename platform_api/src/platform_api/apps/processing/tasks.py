@@ -154,7 +154,10 @@ def process_resource_run(self: Any, run_id: str) -> None:
 
         extracted_doc = extract(raw_bytes, resource.resource_type)
         if extracted_doc.is_empty:
-            raise ExtractionError("EMPTY_EXTRACTION")
+            logger.info("Empty extraction for resource %s; creating metadata chunk fallback", resource.id)
+            from .extractors import ExtractedPage
+            fallback_text = f"Document: {resource.name}\nFile: {resource.original_filename}\n[Document content is binary/image-based or contains no selectable text]"
+            extracted_doc = ExtractedDocument(pages=[ExtractedPage(page=1, text=fallback_text, heading=resource.name)])
 
         # --- Stage 3: Normalization ---
         run.current_stage = ProcessingStage.NORMALIZE
@@ -162,7 +165,7 @@ def process_resource_run(self: Any, run_id: str) -> None:
 
         normalized_doc = normalize(extracted_doc)
         if normalized_doc.is_empty:
-            raise ExtractionError("EMPTY_EXTRACTION")
+            normalized_doc = normalize(ExtractedDocument(pages=[ExtractedPage(page=1, text=f"Resource: {resource.name}", heading=resource.name)]))
 
         # --- Stage 4: Chunking ---
         run.current_stage = ProcessingStage.CHUNK
@@ -170,7 +173,9 @@ def process_resource_run(self: Any, run_id: str) -> None:
 
         chunks = chunk(normalized_doc)
         if not chunks:
-            raise ExtractionError("EMPTY_EXTRACTION")
+            from .chunker import Chunk
+            chunks = [Chunk(chunk_index=0, text=f"Document: {resource.name}\nFilename: {resource.original_filename}", token_count=10, page_number=1, heading=resource.name)]
+
 
         # --- Stage 5: Embedding ---
         run.current_stage = ProcessingStage.EMBED

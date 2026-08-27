@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { DocumentIcon } from "./document-icon";
 import { ResourceCard } from "./resource-card";
 import { ResourceUploadModal } from "./resource-upload-modal";
 import type { LibraryResource } from "@/lib/api/libraries";
@@ -349,10 +350,8 @@ export function FolderTreeExplorer({
           </div>
           <div className="divide-y divide-border">
             {currentFileList.map((resource) => {
-              const ext = resource.resource_type?.toLowerCase() || "txt";
-              const isPdf = ext === "pdf";
-              const isDocx = ext === "docx";
               const downloadUrl = `${BASE_URL}/api/v1/libraries/${libraryId}/resources/${resource.id}/download/`;
+              const fileIdentifier = resource.original_filename || resource.name || resource.resource_type;
 
               return (
                 <div
@@ -360,23 +359,7 @@ export function FolderTreeExplorer({
                   className="flex items-center justify-between px-4 py-3 hover:bg-surface-hover transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-4">
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-12 font-semibold ${
-                        isPdf
-                          ? "border-danger-border bg-danger-subtle text-danger"
-                          : isDocx
-                            ? "border-accent-border bg-accent-subtle text-accent"
-                            : "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      }`}
-                    >
-                      {isPdf ? (
-                        <FileText size={15} />
-                      ) : isDocx ? (
-                        <FileSpreadsheet size={15} />
-                      ) : (
-                        <FileCode2 size={15} />
-                      )}
-                    </div>
+                    <DocumentIcon filenameOrType={fileIdentifier} size="sm" />
                     <div className="min-w-0">
                       <p className="text-13 font-semibold text-ink truncate">
                         {resource.displayName}

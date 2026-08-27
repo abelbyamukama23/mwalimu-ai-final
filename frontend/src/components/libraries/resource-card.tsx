@@ -20,6 +20,8 @@ import {
 } from "@/lib/hooks/use-libraries";
 import type { LibraryResource } from "@/lib/api/libraries";
 
+import { DocumentIcon, getDocumentTypeInfo } from "./document-icon";
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_PLATFORM_API_BASE_URL ?? "https://backend.ai-mwalimu.com";
 
@@ -58,10 +60,8 @@ export function ResourceCard({
     }
   };
 
-  // Compute file visual badge tone & icon
-  const ext = resource.resource_type?.toLowerCase() || "txt";
-  const isPdf = ext === "pdf";
-  const isDocx = ext === "docx";
+  const fileIdentifier = resource.original_filename || resource.name || resource.resource_type;
+  const typeInfo = getDocumentTypeInfo(fileIdentifier);
 
   // Status computation
   const currentStatus = procStatus?.status ?? resource.status;
@@ -77,29 +77,13 @@ export function ResourceCard({
       <div>
         {/* Top bar: Format badge and Actions */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-lg border text-16 font-semibold ${
-                isPdf
-                  ? "border-danger-border bg-danger-subtle text-danger"
-                  : isDocx
-                    ? "border-accent-border bg-accent-subtle text-accent"
-                    : "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-              }`}
-            >
-              {isPdf ? (
-                <FileText size={20} aria-hidden />
-              ) : isDocx ? (
-                <FileSpreadsheet size={20} aria-hidden />
-              ) : (
-                <FileCode2 size={20} aria-hidden />
-              )}
-            </div>
+          <div className="flex items-center gap-3">
+            <DocumentIcon filenameOrType={fileIdentifier} size="md" />
             <div>
               <span className="text-11 font-mono uppercase tracking-wider text-ink-tertiary">
-                {ext}
+                {typeInfo.label}
               </span>
-              <p className="text-11 text-ink-tertiary">
+              <p className="text-11 text-ink-tertiary font-mono">
                 {formatBytes(resource.size)}
               </p>
             </div>
