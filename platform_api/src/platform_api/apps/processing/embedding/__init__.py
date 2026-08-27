@@ -37,6 +37,8 @@ def get_embedding_provider() -> EmbeddingProvider:
         "EMBEDDING_PROVIDER_BACKEND",
         "platform_api.apps.processing.embedding.openai_provider.OpenAICompatibleProvider",
     )
+    if not getattr(settings, "EMBEDDING_API_KEY", "") and backend_path.endswith("OpenAICompatibleProvider"):
+        backend_path = "platform_api.apps.processing.embedding.fake_provider.FakeEmbeddingProvider"
     cls = import_string(backend_path)
     instance = cls()
     return instance  # type: ignore[no-any-return]
