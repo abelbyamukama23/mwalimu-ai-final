@@ -1,7 +1,9 @@
 """Root URL configuration for the Mwalimu Platform API."""
 
 from django.contrib import admin
+from django.http import HttpRequest, JsonResponse
 from django.urls import include, path
+from django.views.decorators.http import require_GET
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from platform_api.apps.users.views import (
@@ -14,7 +16,22 @@ from platform_api.apps.users.views import (
     UserProfileView,
 )
 
+
+@require_GET
+def health_check(request: HttpRequest) -> JsonResponse:
+    """Lightweight unauthenticated health check for Railway deployment."""
+    return JsonResponse(
+        {
+            "status": "healthy",
+            "service": "mwalimu-platform-api",
+        },
+        status=200,
+    )
+
+
 urlpatterns = [
+    path("health/", health_check, name="health_check"),
+    path("health", health_check, name="health_check_noslash"),
     path("admin/", admin.site.urls),
     path("api/v1/auth/register/", RegisterView.as_view(), name="register"),
     path("api/v1/auth/login/", LoginView.as_view(), name="token_obtain_pair"),

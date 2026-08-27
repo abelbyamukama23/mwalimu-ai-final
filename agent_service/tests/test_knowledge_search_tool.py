@@ -156,8 +156,8 @@ async def test_knowledge_search_error_responses() -> None:
 
 
 @pytest.mark.asyncio
-async def test_knowledge_search_handles_title_fallback_and_presentation_schema() -> None:
-    """Test fallback when Gateway payload uses 'title' and verify CitationResponse maps title."""
+async def test_knowledge_search_handles_title_fallback_schema() -> None:
+    """Test fallback when Gateway uses 'title' and verify CitationResponse."""
     from agent_service.presentation.schemas import CitationResponse
 
     vault = DelegatedCredentialVault()

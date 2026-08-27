@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-import environ
+import environ  # type: ignore[import-untyped]
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -49,6 +49,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
