@@ -37,8 +37,8 @@ function Bubble({
   return (
     <div
       className={cn(
-        "group flex items-end gap-1.5",
-        isUser ? "justify-end" : "justify-start",
+        "group flex flex-col",
+        isUser ? "items-end" : "items-start",
       )}
     >
       <div
@@ -61,7 +61,7 @@ function Bubble({
       <CopyButton
         text={content}
         label={isUser ? "message" : "response"}
-        className="mb-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        className="mt-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
       />
     </div>
   );
@@ -76,7 +76,7 @@ function StreamingBubble({
   citations?: Citation[];
 }) {
   return (
-    <div className="group flex items-end justify-start gap-1.5">
+    <div className="group flex flex-col items-start">
       <div className="max-w-[92%] overflow-hidden">
         <GroundingIndicator citations={citations} />
         <MarkdownContent content={content} />
@@ -89,7 +89,7 @@ function StreamingBubble({
       <CopyButton
         text={content}
         label="response"
-        className="mb-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        className="mt-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
       />
     </div>
   );
