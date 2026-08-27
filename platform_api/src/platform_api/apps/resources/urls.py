@@ -22,6 +22,12 @@ resource_download = ResourceViewSet.as_view(
         "get": "download",
     }
 )
+resource_processing_status = ResourceViewSet.as_view(
+    {
+        "get": "processing_status",
+        "post": "processing_status",
+    }
+)
 
 urlpatterns = [
     path(
@@ -38,5 +44,10 @@ urlpatterns = [
         "libraries/<uuid:library_pk>/resources/<uuid:pk>/download/",
         resource_download,
         name="resource-download",
+    ),
+    path(
+        "libraries/<uuid:library_pk>/resources/<uuid:pk>/processing-status/",
+        resource_processing_status,
+        name="resource-processing-status",
     ),
 ]
