@@ -6,13 +6,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install deps first for layer caching.
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm install --include=dev
 
 COPY . .
 
 # NEXT_PUBLIC_* are inlined at build time; Railway passes this service's
 # NEXT_PUBLIC_PLATFORM_API_BASE_URL into the build environment.
-RUN NEXT_PUBLIC_PLATFORM_API_BASE_URL=$NEXT_PUBLIC_PLATFORM_API_BASE_URL npm run build
+ARG NEXT_PUBLIC_PLATFORM_API_BASE_URL
+ENV NEXT_PUBLIC_PLATFORM_API_BASE_URL=$NEXT_PUBLIC_PLATFORM_API_BASE_URL
+RUN npm run build
 
 EXPOSE 3000
 
