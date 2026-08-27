@@ -1,6 +1,7 @@
 """Views for the resources app."""
 
 import hashlib
+import logging
 import uuid
 from typing import Any
 
@@ -21,6 +22,8 @@ from .object_key import generate_resource_object_key
 from .serializers import ResourceSerializer
 from .storage import get_object_storage
 from .validators import ResourceValidationError, validate_resource_upload
+
+logger = logging.getLogger(__name__)
 
 
 def _get_library(user: User | Any, library_id: uuid.UUID) -> Library:
@@ -174,8 +177,68 @@ class ResourceViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         resource.status = ResourceStatus.READY
         resource.save(update_fields=["status"])
 
+        # Automatically enqueue background processing, chunking & vector embedding
+        try:
+            from platform_api.apps.processing.services import enqueue_processing
+
+            enqueue_processing(resource)
+        except Exception as proc_exc:  # noqa: BLE001
+            logger.warning(
+                "Failed to enqueue processing for resource %s: %s",
+                resource.id,
+                proc_exc,
+            )
+
         serializer = self.get_serializer(resource)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get", "post"], url_path="processing-status")
+    def processing_status(
+        self, request: Request, *args: object, **kwargs: object
+    ) -> Response:
+        """Return or trigger processing run status for the resource."""
+        self.get_library()
+        resource = self.get_object()
+
+        if request.method == "POST":
+            self.get_library(require_manage=True)
+            from platform_api.apps.processing.services import enqueue_processing
+
+            run = enqueue_processing(resource)
+        else:
+            from platform_api.apps.processing.models import ProcessingRun
+
+            run = (
+                ProcessingRun.objects.filter(resource=resource)
+                .order_by("-created_at")
+                .first()
+            )
+
+        if not run:
+            return Response(
+                {
+                    "status": "NOT_ENQUEUED",
+                    "resource_id": str(resource.id),
+                    "chunks_count": 0,
+                }
+            )
+
+        from platform_api.apps.processing.models import DocumentChunk
+
+        chunks_count = DocumentChunk.objects.filter(processing_run=run).count()
+
+        return Response(
+            {
+                "run_id": str(run.id),
+                "resource_id": str(resource.id),
+                "status": run.status,
+                "current_stage": run.current_stage,
+                "is_active": run.is_active,
+                "chunks_count": chunks_count,
+                "created_at": run.created_at.isoformat() if run.created_at else None,
+                "updated_at": run.updated_at.isoformat() if run.updated_at else None,
+            }
+        )
 
     def update(self, request: Request, *args: object, **kwargs: object) -> Response:
         """Only library managers may update resource metadata."""
