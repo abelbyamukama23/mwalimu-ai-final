@@ -1,0 +1,103 @@
+name: Contract E2E
+
+# Validates the six Mwalimu contracts against a REAL DeepSeek round-trip
+# (teaching loop, regional grounding, personal-library retrieval + citations,
+# learner adaptation, non-learning direct answers). Runnable nightly or manually.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *" # nightly 03:00 UTC
+
+jobs:
+  contract:
+    name: Real-DeepSeek contract validation
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mwalimu
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/mwalimu
+      CELERY_BROKER_URL: redis://127.0.0.1:6379/0
+      CELERY_RESULT_BACKEND: redis://127.0.0.1:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "true"
+      EMBEDDING_PROVIDER_BACKEND: platform_api.apps.processing.embedding.fake_provider.FakeEmbeddingProvider
+      OBJECT_STORAGE_BACKEND: platform_api.apps.resources.fake_storage.FakeStorage
+      SECRET_KEY: contract-ci-secret
+      AGENT_SERVICE_JWT_SECRET_KEY: contract-ci-agent-jwt
+      INTERNAL_SERVICE_SECRET_KEY: contract-ci-internal
+      AGENT_STREAM_JWT_SECRET_KEY: contract-ci-stream
+      AGENT_SERVICE_BASE_URL: http://localhost:8001
+      AGENT_SERVICE_PUBLIC_BASE_URL: http://localhost:8001
+      PLATFORM_API_BASE_URL: http://localhost:8000
+      PLATFORM_COMPLETION_URL: http://localhost:8000
+      JWT_SECRET_KEY: contract-ci-agent-jwt
+      DEFAULT_MODEL_PROVIDER: deepseek
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          (cd platform_api && uv sync --frozen --extra dev)
+          (cd agent_service && uv sync --frozen --extra dev)
+
+      - name: Migrate
+        working-directory: platform_api
+        run: |
+          export PYTHONPATH=src
+          export DJANGO_SETTINGS_MODULE=platform_api.settings
+          uv run python manage.py migrate --noinput
+
+      - name: Start services
+        run: |
+          set -e
+          export PYTHONPATH=src
+          export DJANGO_SETTINGS_MODULE=platform_api.settings
+          nohup bash -c 'cd platform_api && uv run python manage.py runserver 0.0.0.0:8000 --noreload > platform.log 2>&1' &
+          export PYTHONPATH=src
+          nohup bash -c 'cd agent_service && uv run python -m uvicorn agent_service.main:app --host 0.0.0.0 --port 8001 --workers 1 > agent.log 2>&1' &
+          echo "starting services"
+
+      - name: Wait for services
+        run: |
+          set -e
+          for i in $(seq 1 60); do
+            PLATFORM=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/v1/auth/login/ || true)
+            AGENT=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/health || true)
+            if [ "$AGENT" = "200" ] && [ "$PLATFORM" != "000" ]; then
+              echo "services up (platform=$PLATFORM agent=$AGENT)"; exit 0
+            fi
+            sleep 2
+          done
+          echo "services did not become ready"; cat platform.log agent.log 2>/dev/null | tail -50; exit 1
+
+      - name: Run contract scenarios
+        working-directory: platform_api
+        run: |
+          export PYTHONPATH=src
+          export DJANGO_SETTINGS_MODULE=platform_api.settings
+          uv run python "$GITHUB_WORKSPACE/scripts/contract_e2e.py"

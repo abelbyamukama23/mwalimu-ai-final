@@ -73,5 +73,5 @@ def get_object_storage() -> ObjectStorage:
 
 
 # Re-export for backwards compatibility
-from .s3_storage import S3Storage  # noqa: E402
+from .s3_storage import S3Storage  # noqa: E402,F401
 

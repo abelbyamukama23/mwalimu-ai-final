@@ -200,14 +200,15 @@ class ResourceViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         self.get_library()
         resource = self.get_object()
 
+        from platform_api.apps.processing.models import ProcessingRun
+
+        run: ProcessingRun | None
         if request.method == "POST":
             self.get_library(require_manage=True)
             from platform_api.apps.processing.services import enqueue_processing
 
             run = enqueue_processing(resource)
         else:
-            from platform_api.apps.processing.models import ProcessingRun
-
             run = (
                 ProcessingRun.objects.filter(resource=resource)
                 .order_by("-created_at")
