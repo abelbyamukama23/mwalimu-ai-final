@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuthModalProvider } from "@/components/auth/auth-modal";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { AppProviders } from "@/components/providers/app-providers";
+import { ThemeController } from "@/components/theme/theme-controller";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AppProviders>
           <AuthProvider>
             <AuthModalProvider>{children}</AuthModalProvider>
+            <ThemeController />
           </AuthProvider>
         </AppProviders>
       </body>

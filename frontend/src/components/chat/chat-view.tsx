@@ -10,6 +10,7 @@ import type { KnowledgeScope } from "@/components/chat/knowledge-scope-popover";
 import { MarkdownContent } from "@/components/chat/markdown";
 import { SuggestionChips } from "@/components/chat/suggestion-chips";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Citation } from "@/lib/chat/chat-api";
@@ -32,16 +33,22 @@ function Bubble({
   content: string;
   citations?: Citation[];
 }) {
+  const isUser = role === "user";
   return (
-    <div className={cn("flex", role === "user" ? "justify-end" : "justify-start")}>
+    <div
+      className={cn(
+        "group flex items-end gap-1.5",
+        isUser ? "justify-end" : "justify-start",
+      )}
+    >
       <div
         className={
-          role === "user"
+          isUser
             ? "max-w-[85%] rounded-md bg-subtle px-4 py-2.5 text-14 leading-relaxed text-ink"
             : "max-w-[92%] overflow-hidden"
         }
       >
-        {role === "user" ? (
+        {isUser ? (
           content
         ) : (
           <div>
@@ -51,6 +58,11 @@ function Bubble({
           </div>
         )}
       </div>
+      <CopyButton
+        text={content}
+        label={isUser ? "message" : "response"}
+        className="mb-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      />
     </div>
   );
 }
@@ -64,7 +76,7 @@ function StreamingBubble({
   citations?: Citation[];
 }) {
   return (
-    <div className="flex justify-start">
+    <div className="group flex items-end justify-start gap-1.5">
       <div className="max-w-[92%] overflow-hidden">
         <GroundingIndicator citations={citations} />
         <MarkdownContent content={content} />
@@ -74,6 +86,11 @@ function StreamingBubble({
         />
         <CitationChips citations={citations} />
       </div>
+      <CopyButton
+        text={content}
+        label="response"
+        className="mb-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      />
     </div>
   );
 }
@@ -193,8 +210,14 @@ export function ChatView({ sessionId }: { sessionId: string }) {
 
           {streaming && (
             <>
-              {pendingUser && <Bubble role="user" content={pendingUser} />}
-              <StreamingBubble content={liveText} citations={liveCitations} />
+              {pendingUser && (
+                <Bubble key="__streaming_user__" role="user" content={pendingUser} />
+              )}
+              <StreamingBubble
+                key="__streaming_assistant__"
+                content={liveText}
+                citations={liveCitations}
+              />
             </>
           )}
         </div>

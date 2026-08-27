@@ -121,6 +121,42 @@
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas;
 }
 
+/*
+ * Mwalimu dark palette — warm, low-contrast surfaces to keep the same
+ * products feel as the light theme. Toggling the `dark` class on <html>
+ * (System/Light/Dark preference) swaps these theme variables.
+ */
+.dark {
+  --color-canvas: #171614;
+  --color-surface: #201e1b;
+  --color-subtle: #2a2723;
+  --color-sidebar: #1d1b18;
+  --color-active: #25312e;
+
+  --color-accent: #4fa89b;
+  --color-accent-hover: #5cb7a9;
+  --color-accent-subtle: #24332f;
+
+  --color-ink: #e8e6e2;
+  --color-ink-secondary: #b0aca4;
+  --color-ink-tertiary: #8a867c;
+
+  --color-border: #3a3732;
+  --color-border-strong: #4a4741;
+
+  --color-success-bg: #22302a;
+  --color-success-fg: #6cc08a;
+  --color-warning-bg: #33291a;
+  --color-warning-fg: #d0a34a;
+  --color-info-bg: #1f2d35;
+  --color-info-fg: #6fb3d1;
+  --color-accentsoft-bg: #35281f;
+  --color-accentsoft-fg: #e09155;
+
+  --shadow-composer: 0 2px 8px rgb(0 0 0 / 0.35);
+  --shadow-overlay: 0 8px 30px rgb(0 0 0 / 0.5);
+}
+
 @layer base {
   body {
     @apply bg-canvas font-sans text-14 text-ink antialiased;
