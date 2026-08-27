@@ -4,10 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createLibrary,
   deleteLibrary,
+  deleteLibraryResource,
   getLibrary,
+  getResourceProcessingStatus,
   listLibraries,
   listLibraryResources,
   updateLibrary,
+  uploadLibraryResource,
   type CreateLibraryPayload,
   type Library,
   type LibraryResource,
@@ -76,3 +79,49 @@ export function useDeleteLibrary() {
     },
   });
 }
+
+export function useUploadLibraryResource(libraryId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<LibraryResource, Error, FormData>({
+    mutationFn: (formData) => uploadLibraryResource(libraryId, formData),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["libraries", libraryId, "resources"],
+      });
+    },
+  });
+}
+
+export function useDeleteLibraryResource(libraryId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (resourceId) => deleteLibraryResource(libraryId, resourceId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["libraries", libraryId, "resources"],
+      });
+    },
+  });
+}
+
+export function useResourceProcessingStatus(
+  libraryId: string | undefined,
+  resourceId: string | undefined,
+) {
+  return useQuery({
+    queryKey: ["libraries", libraryId, "resources", resourceId, "status"],
+    queryFn: () => {
+      if (!libraryId || !resourceId) throw new Error("Missing IDs");
+      return getResourceProcessingStatus(libraryId, resourceId);
+    },
+    enabled: Boolean(libraryId && resourceId),
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (data && (data.status === "ready" || data.status === "failed")) {
+        return false;
+      }
+      return 2000;
+    },
+  });
+}
+

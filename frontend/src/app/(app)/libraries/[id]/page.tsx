@@ -18,6 +18,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CreateConnectionModal } from "@/components/connectors/create-connection-modal";
 import { SyncJobsDialog } from "@/components/connectors/sync-jobs-dialog";
+import { FolderTreeExplorer } from "@/components/libraries/folder-tree-explorer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -261,24 +262,18 @@ export default function LibraryDetailPage() {
             )}
           </TabsList>
 
-          {/* Tab: Resources */}
+          {/* Tab: Resources (GitHub-style folder explorer and resource cards) */}
           <TabsContent value="resources">
             {loadingResources ? (
               <div className="py-12 text-center text-13 text-ink-tertiary">
                 Loading resources…
               </div>
-            ) : !resources || resources.length === 0 ? (
-              <EmptyState
-                icon={FileText}
-                title="No resources yet"
-                body="Original resources and documents uploaded or indexed to this library will appear here."
-              />
             ) : (
-              <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
-                {resources.map((res) => (
-                  <ResourceItem key={res.id} resource={res} />
-                ))}
-              </div>
+              <FolderTreeExplorer
+                libraryId={libraryId ?? ""}
+                resources={resources ?? []}
+                canManage={canManage}
+              />
             )}
           </TabsContent>
 
@@ -511,38 +506,3 @@ export default function LibraryDetailPage() {
   );
 }
 
-function ResourceItem({ resource }: { resource: LibraryResource }) {
-  const formatBytes = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  return (
-    <div className="flex items-center justify-between px-4 py-3.5">
-      <div className="flex items-center gap-3">
-        <FileText size={16} aria-hidden className="text-ink-tertiary" />
-        <div>
-          <p className="text-13 font-medium text-ink">
-            {resource.original_filename || resource.name}
-          </p>
-          <p className="text-11 text-ink-tertiary">
-            {resource.resource_type.toUpperCase()} • {formatBytes(resource.size)} •{" "}
-            {new Date(resource.created_at).toLocaleDateString()}
-          </p>
-        </div>
-      </div>
-      <Badge
-        tone={
-          resource.status === "indexed"
-            ? "success"
-            : resource.status === "failed"
-              ? "warning"
-              : "neutral"
-        }
-      >
-        {resource.status}
-      </Badge>
-    </div>
-  );
-}

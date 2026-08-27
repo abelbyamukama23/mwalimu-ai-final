@@ -125,3 +125,55 @@ export async function listLibraryResources(
   }
   return response.results ?? [];
 }
+
+export async function uploadLibraryResource(
+  libraryId: string,
+  formData: FormData,
+): Promise<LibraryResource> {
+  return apiFetch<LibraryResource>(`/api/v1/libraries/${libraryId}/resources/`, {
+    method: "POST",
+    formData,
+  });
+}
+
+export async function deleteLibraryResource(
+  libraryId: string,
+  resourceId: string,
+): Promise<void> {
+  await apiFetch(`/api/v1/libraries/${libraryId}/resources/${resourceId}/`, {
+    method: "DELETE",
+  });
+}
+
+export type ResourceProcessingStatusResponse = {
+  run_id?: string;
+  resource_id: string;
+  status: "queued" | "processing" | "ready" | "failed" | "NOT_ENQUEUED";
+  current_stage?: string | null;
+  is_active?: boolean;
+  chunks_count?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export async function getResourceProcessingStatus(
+  libraryId: string,
+  resourceId: string,
+): Promise<ResourceProcessingStatusResponse> {
+  return apiFetch<ResourceProcessingStatusResponse>(
+    `/api/v1/libraries/${libraryId}/resources/${resourceId}/processing-status/`,
+  );
+}
+
+export async function triggerResourceProcessing(
+  libraryId: string,
+  resourceId: string,
+): Promise<ResourceProcessingStatusResponse> {
+  return apiFetch<ResourceProcessingStatusResponse>(
+    `/api/v1/libraries/${libraryId}/resources/${resourceId}/processing-status/`,
+    {
+      method: "POST",
+    },
+  );
+}
+

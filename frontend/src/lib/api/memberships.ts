@@ -45,3 +45,32 @@ export async function listMemberships(): Promise<Membership[]> {
   }
   return response.results ?? [];
 }
+
+export type Institution = {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function listInstitutions(): Promise<Institution[]> {
+  const response = await apiFetch<PaginatedResponse<Institution> | Institution[]>(
+    "/api/v1/institutions/",
+  );
+  if (Array.isArray(response)) {
+    return response;
+  }
+  return response.results ?? [];
+}
+
+export async function createMembership(payload: {
+  institution_id: string;
+  role?: MembershipRole;
+}): Promise<Membership> {
+  return apiFetch<Membership>("/api/v1/memberships/", {
+    method: "POST",
+    body: payload,
+  });
+}
+

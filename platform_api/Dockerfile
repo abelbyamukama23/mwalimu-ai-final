@@ -18,4 +18,4 @@ EXPOSE 8000
 
 # Railway injects PORT; the platform serves HTTP on that port.
 # Migrations + static collection run on every start (idempotent), so no
-CMD ["sh", "-c", ".venv/bin/python manage.py migrate --noinput && .venv/bin/python manage.py collectstatic --noinput && .venv/bin/celery -A platform_api worker -Q default,ingestion --loglevel=info --concurrency=2 --detach && .venv/bin/gunicorn platform_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 --graceful-timeout 30"]
+CMD ["sh", "-c", ".venv/bin/python manage.py migrate --noinput && .venv/bin/python manage.py collectstatic --noinput && .venv/bin/python manage.py seed_geographic_units && .venv/bin/celery -A platform_api worker -Q default,ingestion --loglevel=info --concurrency=2 --detach && .venv/bin/gunicorn platform_api.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 --graceful-timeout 30"]
