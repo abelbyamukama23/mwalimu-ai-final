@@ -25,12 +25,13 @@ class Command(BaseCommand):
         for c in countries:
             obj, created = GeographicUnit.objects.get_or_create(
                 slug=c["slug"],
+                parent=None,
                 defaults={
                     "name": c["name"],
                     "country_code": c["country_code"],
                     "unit_type": c["unit_type"],
                     "status": GeographicUnitStatus.ACTIVE,
-                    "tags": c["tags"],
+                    "metadata": {"tags": c["tags"]},
                 },
             )
             created_countries[c["country_code"]] = obj
@@ -85,13 +86,13 @@ class Command(BaseCommand):
             parent = created_countries.get(u["country_code"])
             obj, created = GeographicUnit.objects.get_or_create(
                 slug=u["slug"],
+                parent=parent,
                 defaults={
                     "name": u["name"],
                     "country_code": u["country_code"],
                     "unit_type": u["unit_type"],
-                    "parent": parent,
                     "status": GeographicUnitStatus.ACTIVE,
-                    "tags": u["tags"],
+                    "metadata": {"tags": u["tags"]},
                 },
             )
             count += 1
