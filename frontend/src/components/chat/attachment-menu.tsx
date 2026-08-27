@@ -1,13 +1,11 @@
 "use client";
 
-import { Check, FileText, Image as ImageIcon, Library, Plus } from "lucide-react";
+import { FileText, Image as ImageIcon, Library, Plus } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { IconButton } from "@/components/ui/icon-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { type KnowledgeScope, SCOPES } from "@/components/chat/knowledge-scope-popover";
-import { cn } from "@/lib/utils";
 
 const ATTACHMENTS = [
   { icon: FileText, label: "Upload a document" },
@@ -20,16 +18,10 @@ const ATTACHMENTS = [
  * backend, so each action is clearly marked unavailable (disabled + "Soon")
  * rather than pretending to work.
  *
- * It also exposes and syncs the Mwalimu KnowledgeScope state to provide
- * direct knowledge management alongside file uploads.
+ * Knowledge source selection lives in the composer's KnowledgeScopePopover
+ * (shown next to the send button) — it is intentionally NOT duplicated here.
  */
-export function AttachmentMenu({
-  scope,
-  onScopeChange,
-}: {
-  scope: KnowledgeScope;
-  onScopeChange: (scope: KnowledgeScope) => void;
-}) {
+export function AttachmentMenu() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -56,35 +48,6 @@ export function AttachmentMenu({
               <item.icon size={15} aria-hidden className="shrink-0" />
               <span className="flex-1">{item.label}</span>
               <Badge tone="warning">Soon</Badge>
-            </button>
-          ))}
-        </div>
-        <Separator className="my-2" />
-        <p className="px-1 pb-2 text-11 font-medium tracking-wide text-ink-tertiary">
-          KNOWLEDGE SOURCES
-        </p>
-        <div className="space-y-0.5" role="radiogroup" aria-label="Knowledge sources">
-          {SCOPES.map((s) => (
-            <button
-              key={s.id}
-              role="radio"
-              aria-checked={scope === s.id}
-              onClick={() => {
-                onScopeChange(s.id);
-                setOpen(false);
-              }}
-              className="focus-ring flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-left transition-colors duration-150 hover:bg-subtle"
-            >
-              <span
-                aria-hidden
-                className={cn(
-                  "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2",
-                  scope === s.id ? "border-accent" : "border-border-strong",
-                )}
-              >
-                {scope === s.id && <Check size={10} className="text-accent" strokeWidth={3} />}
-              </span>
-              <span className="text-13 font-medium text-ink">{s.label}</span>
             </button>
           ))}
         </div>

@@ -93,8 +93,7 @@ export const Composer = forwardRef<
         "transition-shadow duration-150 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/15",
       )}
     >
-      <div className="flex items-end gap-2">
-        <AttachmentMenu scope={scope} onScopeChange={onScopeChange} />
+      <div className="flex items-end">
         <textarea
           ref={textareaRef}
           rows={1}
@@ -107,9 +106,11 @@ export const Composer = forwardRef<
           className="max-h-[200px] w-full flex-1 resize-none bg-transparent text-15 leading-relaxed text-ink outline-none placeholder:text-ink-tertiary"
         />
       </div>
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <KnowledgeScopePopover scope={scope} onScopeChange={onScopeChange} />
-        {running ? (
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <AttachmentMenu />
+        <div className="flex items-center gap-2">
+          <KnowledgeScopePopover scope={scope} onScopeChange={onScopeChange} />
+          {running ? (
           <button
             onClick={onStop}
             aria-label="Stop generating"
@@ -132,6 +133,7 @@ export const Composer = forwardRef<
             <ArrowUp size={16} aria-hidden />
           </button>
         )}
+        </div>
       </div>
     </div>
   );
