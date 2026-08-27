@@ -30,13 +30,15 @@ _CONTENT_TYPE_MAP: dict[str, tuple[str, ...]] = {
     ResourceType.DOCX: (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ),
-    ResourceType.TXT: ("text/plain",),
+    ResourceType.TXT: ("text/plain", "text/markdown", "text/x-markdown", "application/octet-stream"),
 }
 
 _EXTENSION_MAP: dict[str, str] = {
     ".pdf": ResourceType.PDF,
     ".docx": ResourceType.DOCX,
     ".txt": ResourceType.TXT,
+    ".md": ResourceType.TXT,
+    ".markdown": ResourceType.TXT,
 }
 
 
