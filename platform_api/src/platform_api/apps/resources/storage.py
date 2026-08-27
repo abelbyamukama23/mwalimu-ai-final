@@ -62,8 +62,16 @@ def get_object_storage() -> ObjectStorage:
     backend_path = getattr(
         settings,
         "OBJECT_STORAGE_BACKEND",
-        "platform_api.apps.resources.storage.S3Storage",
+        "platform_api.apps.resources.s3_storage.S3Storage",
     )
+    # Support both storage.S3Storage and s3_storage.S3Storage paths
+    if backend_path == "platform_api.apps.resources.storage.S3Storage":
+        backend_path = "platform_api.apps.resources.s3_storage.S3Storage"
     cls = import_string(backend_path)
     backend = cls()
     return backend  # type: ignore[no-any-return]
+
+
+# Re-export for backwards compatibility
+from .s3_storage import S3Storage  # noqa: E402
+
