@@ -1,6 +1,10 @@
-"""Django admin registration for connectors, connections, and sync jobs."""
+﻿"""Django admin registration for connectors, connections, and sync jobs."""
+
+from __future__ import annotations
 
 from django.contrib import admin
+
+from platform_api.apps.admin_ui import pill
 
 from .models import Connection, ConnectionSyncJob, Connector
 
@@ -22,6 +26,21 @@ class ConnectorAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     readonly_fields = ["id", "created_at", "updated_at"]
 
 
+_CONNECTION_STATUS_TONE = {
+    "connected": "ok",
+    "syncing": "info",
+    "error": "err",
+    "disconnected": "muted",
+}
+_JOB_STATUS_TONE = {
+    "queued": "warn",
+    "running": "info",
+    "completed": "ok",
+    "failed": "err",
+    "cancelled": "muted",
+}
+
+
 @admin.register(Connection)
 class ConnectionAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     """Admin for Library Connections."""
@@ -30,7 +49,7 @@ class ConnectionAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
         "name",
         "library",
         "connector",
-        "status",
+        "status_badge",
         "sync_frequency",
         "last_synced_at",
         "last_sync_status",
@@ -47,6 +66,11 @@ class ConnectionAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
         "created_at",
         "updated_at",
     ]
+    list_select_related = ["library", "connector"]
+
+    @admin.display(description="Status")
+    def status_badge(self, obj: Connection) -> str:
+        return pill(obj.status, _CONNECTION_STATUS_TONE.get(obj.status, "muted"))
 
 
 @admin.register(ConnectionSyncJob)
@@ -56,7 +80,7 @@ class ConnectionSyncJobAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     list_display = [
         "id",
         "connection",
-        "status",
+        "status_badge",
         "resources_discovered",
         "resources_created",
         "resources_updated",
@@ -68,3 +92,9 @@ class ConnectionSyncJobAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     list_filter = ["status"]
     search_fields = ["connection__name", "celery_task_id", "error_code"]
     readonly_fields = ["id", "created_at", "updated_at"]
+    list_select_related = ["connection"]
+    date_hierarchy = "created_at"
+
+    @admin.display(description="Status")
+    def status_badge(self, obj: ConnectionSyncJob) -> str:
+        return pill(obj.status, _JOB_STATUS_TONE.get(obj.status, "muted"))

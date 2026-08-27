@@ -1,5 +1,7 @@
 """Root URL configuration for the Mwalimu Platform API."""
 
+from typing import Any
+
 from django.contrib import admin
 from django.http import HttpRequest, JsonResponse
 from django.urls import include, path
@@ -15,6 +17,46 @@ from platform_api.apps.users.views import (
     UserPreferenceView,
     UserProfileView,
 )
+
+# ---------------------------------------------------------------------------
+# Django admin branding + product-ordered app list
+# ---------------------------------------------------------------------------
+admin.site.site_header = "Mwalimu Admin"
+admin.site.site_title = "Mwalimu Admin"
+admin.site.index_title = "Mwalimu Platform"
+
+_ADMIN_APP_ORDER = [
+    "users",
+    "institutions",
+    "memberships",
+    "libraries",
+    "resources",
+    "processing",
+    "context",
+    "agents",
+    "connectors",
+]
+
+
+def _ordered_admin_app_list(
+    request: HttpRequest,
+    _super: Any = admin.site.get_app_list,
+) -> list[dict[str, Any]]:
+    """Return the admin app list in Mwalimu product order (identity -> knowledge)."""
+    apps = _super(request)
+    order = _ADMIN_APP_ORDER
+
+    def key(app: dict[str, Any]) -> int:
+        try:
+            return order.index(app["app_label"])
+        except ValueError:
+            return len(order)
+
+    return sorted(apps, key=key)
+
+
+# Ordering hook on the default admin site (mypy can't model instance-method patching).
+admin.site.get_app_list = _ordered_admin_app_list  # type: ignore[method-assign,assignment]
 
 
 @require_GET

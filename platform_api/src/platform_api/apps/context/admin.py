@@ -1,6 +1,10 @@
-"""Django admin registration for Mwalimu context domain models."""
+﻿"""Django admin registration for Mwalimu context domain models."""
+
+from __future__ import annotations
 
 from django.contrib import admin
+
+from platform_api.apps.admin_ui import CONTEXT_SCOPE_TONE, pill
 
 from .models import (
     ContextDomain,
@@ -21,7 +25,7 @@ class GeographicUnitAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
         "unit_type",
         "parent",
         "country_code",
-        "status",
+        "status_badge",
         "created_at",
         "updated_at",
     )
@@ -31,6 +35,11 @@ class GeographicUnitAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     readonly_fields = ("created_at", "updated_at")
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ("parent",)
+    list_select_related = ("parent",)
+
+    @admin.display(description="Status")
+    def status_badge(self, obj: GeographicUnit) -> str:
+        return pill(obj.status, "ok" if obj.status == "active" else "muted")
 
 
 @admin.register(ContextDomain)
@@ -52,9 +61,9 @@ class ContextResourceAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
         "title",
         "geographic_unit",
         "context_domain",
-        "scope_type",
+        "scope_badge",
         "institution",
-        "status",
+        "status_badge",
         "created_at",
     )
     list_filter = (
@@ -67,6 +76,15 @@ class ContextResourceAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     ordering = ("-created_at",)
     readonly_fields = ("created_at", "updated_at")
     autocomplete_fields = ("geographic_unit", "context_domain", "institution")
+    list_select_related = ("geographic_unit", "context_domain", "institution")
+
+    @admin.display(description="Scope")
+    def scope_badge(self, obj: ContextResource) -> str:
+        return pill(obj.scope_type, CONTEXT_SCOPE_TONE.get(obj.scope_type, "muted"))
+
+    @admin.display(description="Status")
+    def status_badge(self, obj: ContextResource) -> str:
+        return pill(obj.status, "ok" if obj.status == "active" else "muted")
 
 
 @admin.register(UserFamiliarRegion)
