@@ -72,7 +72,80 @@ class GoogleDriveAdapter(BaseConnectorAdapter):
         if not token:
             return {"error": "Missing OAuth credentials", "items": []}
 
+        # Seamless Sandbox Mode in Development
+        if token.startswith("sandbox_") or creds.get("is_sandbox"):
+            all_demo_items = [
+                {
+                    "id": "sandbox_folder_cs101",
+                    "name": "Computer Science 101 Materials",
+                    "type": "folder",
+                    "mime_type": "application/vnd.google-apps.folder",
+                    "size": 0,
+                    "modified_at": "2026-08-20T10:00:00Z",
+                },
+                {
+                    "id": "sandbox_folder_research",
+                    "name": "Research & Department Archives",
+                    "type": "folder",
+                    "mime_type": "application/vnd.google-apps.folder",
+                    "size": 0,
+                    "modified_at": "2026-08-18T14:30:00Z",
+                },
+                {
+                    "id": "sandbox_file_syllabus",
+                    "name": "CS101_Course_Syllabus_2026.gdoc",
+                    "type": "file",
+                    "mime_type": "application/vnd.google-apps.document",
+                    "size": 15420,
+                    "modified_at": "2026-08-25T09:15:00Z",
+                },
+                {
+                    "id": "sandbox_file_lecture1",
+                    "name": "Lecture_1_Introduction_to_Computing.pdf",
+                    "type": "file",
+                    "mime_type": "application/pdf",
+                    "size": 1048576,
+                    "modified_at": "2026-08-26T11:00:00Z",
+                },
+                {
+                    "id": "sandbox_file_ml_notes",
+                    "name": "Machine_Learning_Foundations_Notes.docx",
+                    "type": "file",
+                    "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "size": 524288,
+                    "modified_at": "2026-08-27T16:45:00Z",
+                },
+            ]
+
+            if query:
+                filtered = [
+                    it for it in all_demo_items if query.lower() in it["name"].lower()
+                ]
+            elif folder_id == "sandbox_folder_cs101":
+                filtered = [
+                    all_demo_items[2],  # syllabus
+                    all_demo_items[3],  # lecture1
+                ]
+            elif folder_id == "sandbox_folder_research":
+                filtered = [
+                    all_demo_items[4],  # ml notes
+                ]
+            else:
+                filtered = all_demo_items
+
+            return {
+                "current_folder_id": folder_id,
+                "breadcrumbs": [
+                    {
+                        "id": folder_id,
+                        "name": "Folder" if folder_id != "root" else "My Drive",
+                    }
+                ],
+                "items": filtered,
+            }
+
         try:
+
             with self._get_client(token) as client:
                 if query:
                     q = f"name contains '{query}' and trashed = false"
@@ -138,7 +211,71 @@ class GoogleDriveAdapter(BaseConnectorAdapter):
         creator = connection.created_by or library.institution.users.first()
         result = SyncResult()
 
+        # Seamless Sandbox Mode Ingestion
+        if token.startswith("sandbox_") or creds.get("is_sandbox"):
+            sandbox_payloads = [
+                (
+                    "sandbox_syllabus_doc",
+                    "[GDrive] CS101 Course Syllabus 2026",
+                    ResourceType.TXT,
+                    "text/plain; charset=utf-8",
+                    b"Computer Science 101: Introduction to Algorithms & Systems\nSemester: Fall 2026\nInstructor: Prof. Ada Lovelace\n\nCourse Description:\nThis course provides an introduction to foundational algorithms, data structures, complexity analysis, and modern AI systems.\n\nGrading Policy:\n- Assignments: 40%\n- Midterm Exam: 25%\n- Final Project: 35%",
+                ),
+                (
+                    "sandbox_lecture1_doc",
+                    "[GDrive] Lecture 1: Computing Foundations & Architecture",
+                    ResourceType.TXT,
+                    "text/plain; charset=utf-8",
+                    b"Lecture 1: Computing Foundations\n\n1. Von Neumann Architecture\nThe central processing unit (CPU) interacts with main memory and I/O devices via the system bus.\n\n2. Algorithmic Complexity\nBig-O notation describes the limiting behavior of a function when the argument tends towards a particular value or infinity.",
+                ),
+            ]
+
+            for s_id, display_name, res_type, content_type, data_bytes in sandbox_payloads:
+                if selected_ids and s_id not in selected_ids and "sandbox_file_syllabus" not in selected_ids:
+                    continue
+
+                result.resources_discovered += 1
+                checksum = hashlib.sha256(data_bytes).hexdigest()
+                safe_filename = f"gdrive_{s_id}.txt"
+
+                existing = Resource.objects.filter(
+                    library=library, original_filename=safe_filename
+                ).first()
+
+                if existing:
+                    if existing.checksum == checksum:
+                        continue
+                    existing.name = display_name
+                    existing.size = len(data_bytes)
+                    existing.checksum = checksum
+                    existing.status = ResourceStatus.READY
+                    existing.save(update_fields=["name", "size", "checksum", "status", "updated_at"])
+                    storage.upload(existing.object_key, io.BytesIO(data_bytes), content_type=content_type, size=len(data_bytes))
+                    enqueue_processing(existing)
+                    result.resources_updated += 1
+                else:
+                    new_res = Resource.objects.create(
+                        library=library,
+                        name=display_name,
+                        resource_type=res_type,
+                        original_filename=safe_filename,
+                        content_type=content_type,
+                        size=len(data_bytes),
+                        object_key="pending",
+                        checksum=checksum,
+                        status=ResourceStatus.READY,
+                        created_by=creator,
+                    )
+                    new_res.object_key = generate_resource_object_key(library.id, new_res.id)
+                    new_res.save(update_fields=["object_key"])
+                    storage.upload(new_res.object_key, io.BytesIO(data_bytes), content_type=content_type, size=len(data_bytes))
+                    enqueue_processing(new_res)
+                    result.resources_created += 1
+
+            return result
+
         try:
+
             with self._get_client(token) as client:
                 if selected_ids:
                     # Directly fetch selected file metadata

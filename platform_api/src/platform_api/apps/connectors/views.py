@@ -359,6 +359,10 @@ class OAuthAuthorizeView(APIView):
                 user_id=request.user.id,
                 redirect_uri=redirect_uri,
             )
+            # If relative sandbox URL, make it absolute for frontend popup
+            if auth_url.startswith("/"):
+                auth_url = request.build_absolute_uri(auth_url)
+
             return Response(
                 {"provider": provider, "authorization_url": auth_url},
                 status=status.HTTP_200_OK,
@@ -367,6 +371,62 @@ class OAuthAuthorizeView(APIView):
             return Response(
                 {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class OAuthSandboxView(APIView):
+    """Interactive local development sandbox consent screen for testing OAuth connections."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request: Request, provider: str) -> Response:
+        """Render sandbox consent screen."""
+        from django.http import HttpResponse
+
+        state = request.query_params.get("state", "")
+        redirect_uri = request.query_params.get(
+            "redirect_uri",
+            request.build_absolute_uri(f"/api/v1/connectors/oauth/{provider}/callback/"),
+        )
+        callback_url = f"{redirect_uri}?code=sandbox_demo_code_{uuid.uuid4().hex[:8]}&state={state}"
+
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mwalimu Sandbox — Connect {provider.title()}</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #faf9f6; color: #201f1d; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
+    .card {{ background: #ffffff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 32px; max-width: 440px; width: 90%; box-shadow: 0 4px 16px rgba(0,0,0,0.06); text-align: center; }}
+    .badge {{ display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 0.5px; }}
+    h2 {{ font-size: 19px; margin: 0 0 8px 0; color: #1c1917; }}
+    p {{ font-size: 13px; color: #78716c; line-height: 1.5; margin: 0 0 24px 0; }}
+    .account-box {{ background: #f5f5f4; border: 1px solid #e7e5e4; border-radius: 8px; padding: 12px; margin-bottom: 24px; text-align: left; display: flex; align-items: center; gap: 12px; }}
+    .avatar {{ width: 36px; height: 36px; border-radius: 50%; background: #0f766e; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }}
+    .btn {{ display: block; width: 100%; background: #0f766e; color: white; border: none; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; box-sizing: border-box; }}
+    .btn:hover {{ background: #115e59; }}
+    .cancel {{ display: block; margin-top: 12px; font-size: 12px; color: #a8a29e; text-decoration: none; cursor: pointer; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Development Sandbox Mode</div>
+    <h2>Authorize {provider.title()}</h2>
+    <p>Mwalimu is requesting permission to link and synchronize your {provider.title()} files in local development.</p>
+    
+    <div class="account-box">
+      <div class="avatar">U</div>
+      <div>
+        <div style="font-size: 13px; font-weight: 600; color: #1c1917;">Demo University Account</div>
+        <div style="font-size: 11px; color: #78716c;">user@mwalimu.ai</div>
+      </div>
+    </div>
+
+    <a href="{callback_url}" class="btn">Allow & Connect Account</a>
+    <a href="javascript:window.close()" class="cancel">Cancel</a>
+  </div>
+</body>
+</html>"""
+        return HttpResponse(html_content, content_type="text/html; charset=utf-8")
 
 
 class OAuthCallbackView(APIView):
@@ -381,6 +441,8 @@ class OAuthCallbackView(APIView):
     )
     def get(self, request: Request, provider: str) -> Response:
         """Handle OAuth callback."""
+        from django.http import HttpResponse
+
         code = request.query_params.get("code")
         state = request.query_params.get("state")
         error = request.query_params.get("error")
@@ -459,7 +521,31 @@ class OAuthCallbackView(APIView):
         connection.set_credentials(credentials)
         connection.save()
 
-        serializer = ConnectionDetailSerializer(connection)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # If requested as JSON (e.g. from API/tests), return serialized data
+        accept_header = request.headers.get("Accept", "")
+        if "application/json" in accept_header:
+            serializer = ConnectionDetailSerializer(connection)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # Otherwise return HTML popup closer for browser window
+        html_success = f"""<!DOCTYPE html>
+<html>
+<head><title>Connected!</title></head>
+<body style="font-family: sans-serif; text-align: center; padding: 40px; background: #faf9f6; color: #201f1d;">
+  <h3 style="color: #0f766e;">Successfully Connected {provider.title()}!</h3>
+  <p style="color: #78716c; font-size: 13px;">Closing authorization window and refreshing your library…</p>
+  <script>
+    try {{
+      if (window.opener) {{
+        window.opener.postMessage({{ type: "MWALIMU_OAUTH_SUCCESS", provider: "{provider}" }}, "*");
+      }}
+    }} catch(e) {{}}
+    setTimeout(function() {{ window.close(); }}, 800);
+  </script>
+</body>
+</html>"""
+        return HttpResponse(html_success, content_type="text/html; charset=utf-8")
+
+
 
 

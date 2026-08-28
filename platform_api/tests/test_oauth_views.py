@@ -56,21 +56,32 @@ def gdrive_connector(db: None) -> Connector:
 
 
 @pytest.mark.django_db
-def test_oauth_authorize_view_generates_url(
-    user_admin: User, library: Library
+def test_oauth_authorize_view_generates_sandbox_or_prod_url(
+    user_admin: User, library: Library, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Authenticated manager can request an OAuth authorization URL."""
+    """Authenticated manager can request an OAuth authorization URL (sandbox in dev, google in prod)."""
     client = APIClient()
     client.force_authenticate(user=user_admin)
 
+    # In dev/sandbox mode
     resp = client.get(
         f"/api/v1/libraries/{library.id}/connections/oauth/google/authorize/"
     )
     assert resp.status_code == 200
     data = resp.json()
     assert data["provider"] == "google"
-    assert "https://accounts.google.com/o/oauth2/v2/auth" in data["authorization_url"]
+    assert "sandbox" in data["authorization_url"]
     assert "state=" in data["authorization_url"]
+
+    # In production with real GOOGLE_CLIENT_ID
+    monkeypatch.setattr("django.conf.settings.GOOGLE_CLIENT_ID", "real-prod-client-id.apps.googleusercontent.com")
+    monkeypatch.setattr("django.conf.settings.GOOGLE_CLIENT_SECRET", "real-prod-secret")
+    resp_prod = client.get(
+        f"/api/v1/libraries/{library.id}/connections/oauth/google/authorize/"
+    )
+    assert resp_prod.status_code == 200
+    data_prod = resp_prod.json()
+    assert "https://accounts.google.com/o/oauth2/v2/auth" in data_prod["authorization_url"]
 
 
 @pytest.mark.django_db
@@ -96,7 +107,8 @@ def test_oauth_callback_view_exchanges_tokens_and_creates_connection(
 
     client = APIClient()
     resp = client.get(
-        f"/api/v1/connectors/oauth/google/callback/?code=mock_auth_code&state={state}"
+        f"/api/v1/connectors/oauth/google/callback/?code=mock_auth_code&state={state}",
+        HTTP_ACCEPT="application/json",
     )
 
     assert resp.status_code == 200
@@ -110,3 +122,4 @@ def test_oauth_callback_view_exchanges_tokens_and_creates_connection(
         "oauth_token": "ya29.test_access_token",
         "refresh_token": "1//test_refresh_token",
     }
+

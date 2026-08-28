@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   ExternalLink,
@@ -58,11 +60,26 @@ export function ServiceIntegrationCard({
   const [isAuthorizing, setIsAuthorizing] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
+  const queryClient = useQueryClient();
   const syncMutation = useTriggerConnectionSync(libraryId);
   const deleteMutation = useDeleteLibraryConnection(libraryId);
   const toast = useToast();
 
   const isConnected = Boolean(existingConnection);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "MWALIMU_OAUTH_SUCCESS") {
+        void queryClient.invalidateQueries({
+          queryKey: ["libraries", libraryId, "connections"],
+        });
+        toast(`Successfully connected ${connector.name}!`);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [libraryId, connector.name, queryClient, toast]);
+
 
   const handleOAuthConnect = async () => {
     try {

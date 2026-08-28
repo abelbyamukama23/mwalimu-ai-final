@@ -1,4 +1,4 @@
-"""OAuth 2.0 provider integration and token exchange service."""
+"""OAuth 2.0 provider integration and token exchange service with Production and Dev Sandbox support."""
 
 from __future__ import annotations
 
@@ -43,6 +43,20 @@ PROVIDER_CONFIGS: dict[str, dict[str, Any]] = {
 }
 
 
+def is_provider_configured(provider: str) -> bool:
+    """Return True if real production OAuth credentials exist in settings."""
+    cfg = PROVIDER_CONFIGS.get(provider.lower())
+    if not cfg:
+        return False
+    client_id = getattr(settings, cfg["client_id_setting"], "")
+    client_secret = getattr(settings, cfg["client_secret_setting"], "")
+    return bool(
+        client_id
+        and client_secret
+        and not client_id.startswith("mwalimu-oauth-client")
+    )
+
+
 def generate_oauth_state(
     provider: str, library_id: uuid.UUID, user_id: uuid.UUID
 ) -> str:
@@ -75,18 +89,25 @@ def get_oauth_authorization_url(
     user_id: uuid.UUID,
     redirect_uri: str,
 ) -> str:
-    """Construct provider OAuth authorization URL."""
+    """Construct provider OAuth authorization URL (or development sandbox URL)."""
     cfg = PROVIDER_CONFIGS.get(provider.lower())
     if not cfg:
         raise OAuthError(f"Unsupported OAuth provider: '{provider}'")
 
-    client_id = getattr(settings, cfg["client_id_setting"], "")
-    if not client_id:
-        # Fallback to demo client id if not configured
-        client_id = "mwalimu-oauth-client-id"
-
     state = generate_oauth_state(provider, library_id, user_id)
 
+    # If in development without registered Google Cloud App, route through dev sandbox
+    if not is_provider_configured(provider):
+        sandbox_params = urllib.parse.urlencode(
+            {
+                "state": state,
+                "provider": provider,
+                "redirect_uri": redirect_uri,
+            }
+        )
+        return f"/api/v1/connectors/oauth/{provider}/sandbox/?{sandbox_params}"
+
+    client_id = getattr(settings, cfg["client_id_setting"])
     params: dict[str, str] = {
         "client_id": client_id,
         "redirect_uri": redirect_uri,
@@ -118,10 +139,18 @@ def exchange_oauth_code(
     if not cfg:
         raise OAuthError(f"Unsupported OAuth provider: '{provider}'")
 
-    client_id = getattr(settings, cfg["client_id_setting"], "mwalimu-oauth-client-id")
-    client_secret = getattr(
-        settings, cfg["client_secret_setting"], "mwalimu-oauth-client-secret"
-    )
+    # Handle Sandbox Simulation Code in Development
+    if code.startswith("sandbox_demo_code_") or not is_provider_configured(provider):
+        return {
+            "oauth_token": f"sandbox_token_{uuid.uuid4().hex[:16]}",
+            "refresh_token": f"sandbox_refresh_{uuid.uuid4().hex[:16]}",
+            "token_type": "Bearer",
+            "account_email": "demo.user@mwalimu.ai",
+            "is_sandbox": True,
+        }
+
+    client_id = getattr(settings, cfg["client_id_setting"])
+    client_secret = getattr(settings, cfg["client_secret_setting"])
 
     headers = {"Accept": "application/json"}
     payload: dict[str, str] = {
@@ -131,7 +160,6 @@ def exchange_oauth_code(
     }
 
     if provider == "notion":
-        # Notion uses HTTP Basic Auth header for client_id/secret
         auth_bytes = f"{client_id}:{client_secret}".encode("utf-8")
         headers["Authorization"] = f"Basic {base64.b64encode(auth_bytes).decode('utf-8')}"
     else:
@@ -153,6 +181,7 @@ def exchange_oauth_code(
                 "token_type": data.get("token_type", "Bearer"),
                 "expires_in": data.get("expires_in"),
                 "workspace_id": data.get("workspace_id"),
+                "is_sandbox": False,
             }
     except Exception as exc:
         if isinstance(exc, OAuthError):
