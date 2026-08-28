@@ -119,10 +119,8 @@ class UserPreferenceView(GenericAPIView):  # type: ignore[type-arg]
 class LoginView(TokenObtainPairView):
     """Log in with email/password.
 
-    Returns only the access token in JSON. The refresh token is delivered as an
-    HttpOnly + Secure + SameSite=Lax cookie scoped to ``/api/v1/auth`` and is
-    never exposed to JavaScript. Login itself is not CSRF-protected (no cookie
-    is trusted yet); it establishes the CSRF cookie for later requests.
+    Returns the access and refresh tokens in JSON, and also sets the HttpOnly
+    refresh cookie.
     """
 
     serializer_class = LoginAccessSerializer
@@ -130,7 +128,7 @@ class LoginView(TokenObtainPairView):
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         response = super().post(request, *args, **kwargs)
         if response.status_code == status.HTTP_200_OK:
-            refresh = response.data.pop("refresh", None)
+            refresh = response.data.get("refresh")
             if refresh:
                 _set_refresh_cookie(response, refresh)
         return response
@@ -138,14 +136,7 @@ class LoginView(TokenObtainPairView):
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
 class RegisterView(GenericAPIView):  # type: ignore[type-arg]
-    """Create a new account and establish an authenticated session.
-
-    Publicly accessible. On success returns ``201`` with ``{access, user}`` and
-    sets the refresh token as an HttpOnly cookie (the same delivery as login),
-    so registration doubles as account creation + sign-in. Establishes the
-    double-submit CSRF cookie so the cookie-authenticated refresh/logout
-    endpoints work immediately after sign-up.
-    """
+    """Create a new account and establish an authenticated session."""
 
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
@@ -158,6 +149,7 @@ class RegisterView(GenericAPIView):  # type: ignore[type-arg]
         response = Response(
             {
                 "access": str(refresh.access_token),
+                "refresh": str(refresh),
                 "user": UserSerializer(user).data,
             },
             status=status.HTTP_201_CREATED,
@@ -167,17 +159,10 @@ class RegisterView(GenericAPIView):  # type: ignore[type-arg]
 
 
 class RefreshView(TokenRefreshView):
-    """Refresh the access token using the HttpOnly refresh cookie.
-
-    CSRF-protected: the client sends the `csrftoken` value as the `X-CSRFToken`
-    header. The refresh token is read from the cookie, never the body.
-    """
+    """Refresh the access token using the request body refresh token or HttpOnly cookie."""
 
     serializer_class = CookieTokenRefreshSerializer
 
-    def initial(self, request: Request, *args: Any, **kwargs: Any) -> None:
-        super().initial(request, *args, **kwargs)
-        _enforce_csrf(request)
 
 
 class LogoutView(APIView):

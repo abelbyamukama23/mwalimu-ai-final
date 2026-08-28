@@ -1,13 +1,15 @@
 /**
  * Auth token state for the Mwalimu frontend.
  *
- * - Access token: memory only (5-minute TTL) — NEVER persisted.
- * - Refresh token: an HttpOnly + Secure cookie owned by the Platform API.
- *   JavaScript can never read, persist, decode, or transmit it. The only JS
- *   cookie we touch is the (non-HttpOnly) double-submit CSRF token.
+ * - Access token: stored in memory + persisted to localStorage for reliable tab/refresh persistence.
+ * - Refresh token: persisted to localStorage & cookie for reliable single-flight token rotation.
  */
 
+const ACCESS_KEY = "mwalimu_access_token";
+const REFRESH_KEY = "mwalimu_refresh_token";
+
 let accessToken: string | null = null;
+let refreshToken: string | null = null;
 
 let authExpiredHandler: (() => void) | null = null;
 
@@ -23,14 +25,51 @@ export function notifyAuthExpired() {
 
 export function setAccess(token: string) {
   accessToken = token;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(ACCESS_KEY, token);
+    } catch {}
+  }
 }
 
 export function getAccess(): string | null {
+  if (accessToken) return accessToken;
+  if (typeof window !== "undefined") {
+    try {
+      accessToken = localStorage.getItem(ACCESS_KEY);
+    } catch {}
+  }
   return accessToken;
+}
+
+export function setRefreshToken(token: string) {
+  refreshToken = token;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(REFRESH_KEY, token);
+    } catch {}
+  }
+}
+
+export function getRefreshToken(): string | null {
+  if (refreshToken) return refreshToken;
+  if (typeof window !== "undefined") {
+    try {
+      refreshToken = localStorage.getItem(REFRESH_KEY);
+    } catch {}
+  }
+  return refreshToken;
 }
 
 export function clearTokens() {
   accessToken = null;
+  refreshToken = null;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem(ACCESS_KEY);
+      localStorage.removeItem(REFRESH_KEY);
+    } catch {}
+  }
 }
 
 /** Read the non-HttpOnly double-submit CSRF token cookie. */

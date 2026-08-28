@@ -19,6 +19,7 @@ import {
   getAccessRemainingMs,
   setAccess,
   setAuthExpiredHandler,
+  setRefreshToken,
 } from "@/lib/auth/token-store";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -38,7 +39,7 @@ export function useAuth() {
   return ctx;
 }
 
-/** Resume a session ~20s before the 5-minute access token expires. */
+/** Resume a session ~20s before the access token expires. */
 const PROACTIVE_REFRESH_LEAD_MS = 20_000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -77,6 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const result = await apiLogin(email, password);
     setAccess(result.access);
+    if (result.refresh) {
+      setRefreshToken(result.refresh);
+    }
     setStatus("authenticated");
     try {
       setUser(await apiMe());
@@ -97,23 +101,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const bootstrap = async () => {
-      const access = getAccess();
-      const needsRefresh = !access || getAccessRemainingMs(access) <= PROACTIVE_REFRESH_LEAD_MS;
-      if (needsRefresh) {
+      let access = getAccess();
+      const remaining = access ? getAccessRemainingMs(access) : 0;
+      const isExpired = !access || remaining <= 0;
+
+      if (isExpired) {
         const refreshed = await singleFlightRefresh();
-        if (!refreshed) {
-          if (!cancelled) setStatus("unauthenticated");
-          return;
+        if (refreshed) {
+          access = refreshed;
         }
       }
-      try {
-        const currentUser = await apiMe();
-        if (cancelled) return;
-        setUser(currentUser);
-        setStatus("authenticated");
-        scheduleProactiveRefresh();
-      } catch {
-        if (!cancelled) setStatus("unauthenticated");
+
+      if (access) {
+        try {
+          const currentUser = await apiMe();
+          if (cancelled) return;
+          setUser(currentUser);
+          setStatus("authenticated");
+          scheduleProactiveRefresh();
+          return;
+        } catch {
+          // If profile fetch failed with 401, attempt refresh once
+          const refreshed = await singleFlightRefresh();
+          if (refreshed) {
+            try {
+              const currentUser = await apiMe();
+              if (cancelled) return;
+              setUser(currentUser);
+              setStatus("authenticated");
+              scheduleProactiveRefresh();
+              return;
+            } catch {}
+          }
+        }
+      }
+
+      if (!cancelled) {
+        clearTokens();
+        setUser(null);
+        setStatus("unauthenticated");
       }
     };
 
@@ -125,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
     };
   }, [scheduleProactiveRefresh]);
+
 
   const value = useMemo(
     () => ({ user, status, login, logout }),

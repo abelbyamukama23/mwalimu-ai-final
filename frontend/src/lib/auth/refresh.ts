@@ -1,15 +1,15 @@
 /**
- * Single-flight cookie-based refresh. Deduplicates concurrent refresh calls so
- * the 401-retry path and the proactive scheduler never stampede the endpoint.
- *
- * The refresh token is never touched by JavaScript: the browser sends the
- * HttpOnly cookie automatically (credentials: "include"), and the double-submit
- * CSRF token is attached as the X-CSRFToken header.
- *
- * Uses a raw fetch (NOT the apiFetch client) to avoid recursion through the
- * 401-and-retry handler. Only mutates token state; does not touch React.
+ * Single-flight refresh supporting both body-passed refresh tokens and HttpOnly cookies.
+ * Deduplicates concurrent refresh calls so the 401-retry path and the proactive
+ * scheduler never stampede the endpoint.
  */
-import { getCsrfToken, notifyAuthExpired, setAccess } from "./token-store";
+import {
+  getCsrfToken,
+  getRefreshToken,
+  notifyAuthExpired,
+  setAccess,
+  setRefreshToken,
+} from "./token-store";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_PLATFORM_API_BASE_URL ?? "http://localhost:8000";
@@ -27,21 +27,26 @@ export function singleFlightRefresh(): Promise<string | null> {
 
 async function refreshOnce(): Promise<string | null> {
   const csrf = getCsrfToken();
+  const storedRefresh = getRefreshToken();
 
-  // A session can only exist if the double-submit CSRF cookie was set (login and
-  // registration always set it alongside the refresh cookie). When it is absent
-  // there is nothing to restore — return without a network round-trip, which
-  // avoids a needless 401/403 console error on the public auth surface.
-  if (!csrf) return null;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (csrf) {
+    headers["X-CSRFToken"] = csrf;
+  }
+
+  const payload: Record<string, string> = {};
+  if (storedRefresh) {
+    payload["refresh"] = storedRefresh;
+  }
 
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/api/v1/auth/refresh/`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": csrf,
-      },
+      headers,
+      body: Object.keys(payload).length > 0 ? JSON.stringify(payload) : "{}",
       credentials: "include",
     });
   } catch {
@@ -56,12 +61,15 @@ async function refreshOnce(): Promise<string | null> {
   }
   if (res.status === 204 || !res.ok) return null;
 
-  const data = (await res.json()) as { access?: string };
+  const data = (await res.json()) as { access?: string; refresh?: string };
   if (typeof data.access !== "string" || data.access.length === 0) {
     notifyAuthExpired();
     return null;
   }
 
   setAccess(data.access);
+  if (data.refresh) {
+    setRefreshToken(data.refresh);
+  }
   return data.access;
 }

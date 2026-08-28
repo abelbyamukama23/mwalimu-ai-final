@@ -136,24 +136,20 @@ class LoginAccessSerializer(TokenObtainPairSerializer):
 
 
 class CookieTokenRefreshSerializer(TokenRefreshSerializer):
-    """Refresh the access token using the HttpOnly refresh cookie, not the body.
+    """Refresh the access token using either the request body or the HttpOnly refresh cookie."""
 
-    The `refresh` token comes from the request cookie (named by
-    ``settings.REFRESH_COOKIE_NAME``). It is never accepted from the request body
-    and is never returned to the client.
-    """
-
-    refresh = serializers.CharField(required=False)
+    refresh = serializers.CharField(required=False, allow_null=True)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         request = self.context.get("request")
-        refresh_token = (
+        body_refresh = attrs.get("refresh")
+        cookie_refresh = (
             request.COOKIES.get(settings.REFRESH_COOKIE_NAME) if request else None
         )
+        refresh_token = body_refresh or cookie_refresh
         if not refresh_token:
-            raise InvalidToken("Refresh token cookie missing.")
-        # The body field is not required; nothing is read from the request body.
-        attrs.pop("refresh", None)
+            raise InvalidToken("Refresh token is missing (neither in body nor in cookie).")
+
         refresh = self.token_class(refresh_token)
         data = {"access": str(refresh.access_token)}
         if getattr(settings, "ROTATE_REFRESH_TOKENS", False):
@@ -162,3 +158,4 @@ class CookieTokenRefreshSerializer(TokenRefreshSerializer):
             refresh.set_iat()
             data["refresh"] = str(refresh)
         return data
+

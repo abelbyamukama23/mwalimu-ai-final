@@ -155,8 +155,12 @@ SPECTACULAR_SETTINGS = {
 
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=int(os.getenv("ACCESS_TOKEN_LIFETIME_MINUTES", "1440"))  # 1 day default
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=int(os.getenv("REFRESH_TOKEN_LIFETIME_DAYS", "7"))  # 7 days default
+    ),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "ALGORITHM": "HS256",
@@ -193,10 +197,14 @@ CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
 
 # Double-submit CSRF: the SPA reads the (non-HttpOnly) csrftoken cookie and
 # sends it as X-CSRFToken for the cookie-authenticated endpoints (refresh/logout).
-CSRF_TRUSTED_ORIGINS = os.getenv(
-    "CSRF_TRUSTED_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000",
-).split(",")
+CSRF_TRUSTED_ORIGINS = [
+    origin
+    for origin in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000",
+    ).split(",")
+    if origin
+]
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "True").lower() in (
     "true",
@@ -205,7 +213,7 @@ CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "True").lower() in (
 )
 CSRF_COOKIE_HTTPONLY = False  # JS must read it to send X-CSRFToken (double-submit).
 
-# Refresh token cookie (HttpOnly + Secure + SameSite=Lax, scoped to auth routes).
+# Refresh token cookie (HttpOnly + Secure + SameSite, scoped to auth routes).
 # Secure is environment-configurable so non-localhost dev setups can relax it;
 # production must default to True (it does).
 REFRESH_COOKIE_NAME = os.getenv("REFRESH_COOKIE_NAME", "mwalimu_refresh")
@@ -220,8 +228,12 @@ REFRESH_COOKIE_SECURE = os.getenv("REFRESH_COOKIE_SECURE", "True").lower() in (
     "1",
     "yes",
 )
-REFRESH_COOKIE_SAMESITE = os.getenv("REFRESH_COOKIE_SAMESITE", "Lax")
+REFRESH_COOKIE_SAMESITE = os.getenv(
+    "REFRESH_COOKIE_SAMESITE",
+    "None" if REFRESH_COOKIE_SECURE else "Lax",
+)
 REFRESH_COOKIE_MAX_AGE = int(timedelta(days=7).total_seconds())
+
 
 # Object storage configuration (S3-compatible: MinIO locally, AWS S3/R2 in production)
 OBJECT_STORAGE_BACKEND = os.getenv(

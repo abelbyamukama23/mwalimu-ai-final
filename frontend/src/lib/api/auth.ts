@@ -18,7 +18,9 @@ export type User = {
 
 export type LoginResult = {
   access: string;
+  refresh?: string;
 };
+
 
 export type RegisterResult = LoginResult & {
   user: User;
