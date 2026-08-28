@@ -8,13 +8,11 @@ import { Input } from "@/components/ui/input";
 import { isValidEmail } from "@/lib/auth/email";
 
 /**
- * Account creation step. Submits the email/password to the platform
- * registration endpoint (POST /api/v1/auth/register/) via the auth panel.
+ * Account creation form: Email + Password + Confirm Password.
  */
 export function SignupForm({
   email,
   onChangeEmail,
-  onBackToEntry,
   onLogin,
   onSubmit,
   submitting,
@@ -22,7 +20,6 @@ export function SignupForm({
 }: {
   email: string;
   onChangeEmail: (email: string) => void;
-  onBackToEntry: () => void;
   onLogin: () => void;
   onSubmit: (email: string, password: string, confirm: string) => void;
   submitting: boolean;
@@ -136,8 +133,8 @@ export function SignupForm({
         </Button>
       </form>
 
-      <div className="flex items-center justify-center gap-1.5 text-13 text-ink-secondary">
-        <span>Already have an account?</span>
+      <p className="text-center text-13 text-ink-secondary">
+        Already have an account?{" "}
         <button
           type="button"
           onClick={onLogin}
@@ -145,15 +142,7 @@ export function SignupForm({
         >
           Log in
         </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={onBackToEntry}
-        className="focus-ring mx-auto block rounded-sm text-13 text-ink-secondary hover:text-ink"
-      >
-        ← Use another email
-      </button>
+      </p>
     </div>
   );
 }

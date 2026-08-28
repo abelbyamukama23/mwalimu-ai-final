@@ -3,7 +3,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { AuthEntry } from "@/components/auth/auth-entry";
 import { LoginForm } from "@/components/auth/login-form";
 import { SignupForm } from "@/components/auth/signup-form";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -13,20 +12,19 @@ import { normalizeEmail } from "@/lib/auth/email";
 
 export type AuthMode = "page" | "modal";
 
-export type AuthInitialView = "entry" | "login" | "signup";
+export type AuthInitialView = "login" | "signup";
 
 type AuthView =
-  | { kind: "entry" }
-  | { kind: "login"; email: string }
-  | { kind: "signup"; email: string }
+  | { kind: "login" }
+  | { kind: "signup" }
   | { kind: "forgot" };
 
-/** One reusable authentication experience, hostable as a modal or a page. */
+/** Unified direct authentication panel (Single-screen Email + Password login). */
 export function AuthPanel({
   mode,
   onSuccess,
   initialEmail = "",
-  initialView = "entry",
+  initialView = "login",
   redirectTo = "/chat/new",
 }: {
   mode: AuthMode;
@@ -40,44 +38,30 @@ export function AuthPanel({
   const { login } = useAuth();
 
   const [view, setView] = useState<AuthView>(() => {
-    const email = normalizeEmail(initialEmail);
-    if (initialView === "login") return { kind: "login", email };
-    if (initialView === "signup") return { kind: "signup", email };
-    return { kind: "entry" };
+    if (initialView === "signup") return { kind: "signup" };
+    return { kind: "login" };
   });
   const [email, setEmail] = useState(normalizeEmail(initialEmail));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const goToEntry = () => {
-    setEmail("");
-    setError(null);
-    setView({ kind: "entry" });
-  };
-
-  const handleContinue = (nextEmail: string) => {
-    const normalized = normalizeEmail(nextEmail);
-    setEmail(normalized);
-    setError(null);
-    setView({ kind: "login", email: normalized });
-  };
-
   const handleLogin = async (loginEmail: string, password: string) => {
+    const normalized = normalizeEmail(loginEmail);
+    setEmail(normalized);
     setSubmitting(true);
     setError(null);
     try {
-      await login(loginEmail, password);
+      await login(normalized, password);
     } catch (err) {
       setSubmitting(false);
       setError(
         err instanceof Error && err.message.length > 0
           ? err.message
-          : "Sign-in failed. Please try again.",
+          : "Sign-in failed. Please check your email and password.",
       );
       return;
     }
     setSubmitting(false);
-    // Login succeeded — session state is owned by AuthProvider.
     if (mode === "page") {
       router.replace(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/chat/new");
       router.refresh();
@@ -96,8 +80,6 @@ export function AuthPanel({
     setError(null);
     setSubmitting(true);
     try {
-      // Create the account, then establish the session using the same AuthProvider
-      // login path (it sets the access token and calls /me).
       await register(normalized, password, confirm);
       await login(normalized, password);
     } catch (err) {
@@ -118,24 +100,21 @@ export function AuthPanel({
     }
   };
 
-  let title = "Log in or sign up";
-  let subtitle =
-    "Your personal AI learning and knowledge workspace. Use your Mwalimu account to continue.";
+  let title = "Log in";
+  let subtitle = "Enter your email and password to access your learning workspace.";
 
   switch (view.kind) {
     case "login":
       title = "Log in";
-      subtitle = "Enter your password to continue.";
+      subtitle = "Enter your email and password to access your learning workspace.";
       break;
     case "signup":
       title = "Create your account";
-      subtitle = "Create a Mwalimu account. You don't need an institution to get started.";
+      subtitle = "Join Mwalimu to explore personalized AI tutors and shared libraries.";
       break;
     case "forgot":
       title = "Reset password";
-      subtitle = "Password reset isn't available yet.";
-      break;
-    default:
+      subtitle = "Password recovery instructions will be provided here.";
       break;
   }
 
@@ -165,19 +144,16 @@ export function AuthPanel({
           view={view}
           submitting={submitting}
           error={error}
-          onContinue={handleContinue}
-          onBackToEntry={goToEntry}
           onForgot={() => setView({ kind: "forgot" })}
           onToSignup={() => {
             setError(null);
-            setView({ kind: "signup", email });
+            setView({ kind: "signup" });
           }}
           onLogin={handleLogin}
           onSignup={handleSignup}
           onBackToLogin={() => {
             setError(null);
-            if (email) setView({ kind: "login", email });
-            else setView({ kind: "entry" });
+            setView({ kind: "login" });
           }}
         />
 
@@ -198,8 +174,6 @@ function AuthBody({
   view,
   submitting,
   error,
-  onContinue,
-  onBackToEntry,
   onForgot,
   onToSignup,
   onLogin,
@@ -211,8 +185,6 @@ function AuthBody({
   view: AuthView;
   submitting: boolean;
   error: string | null;
-  onContinue: (email: string) => void;
-  onBackToEntry: () => void;
   onForgot: () => void;
   onToSignup: () => void;
   onLogin: (email: string, password: string) => void;
@@ -220,20 +192,11 @@ function AuthBody({
   onBackToLogin: () => void;
 }) {
   switch (view.kind) {
-    case "entry":
-      return (
-        <AuthEntry
-          email={email}
-          onChangeEmail={onChangeEmail}
-          onContinue={onContinue}
-          onSignup={onToSignup}
-        />
-      );
     case "login":
       return (
         <LoginForm
           email={email}
-          onBackToEntry={onBackToEntry}
+          onChangeEmail={onChangeEmail}
           onForgot={onForgot}
           onSignup={onToSignup}
           onSubmit={onLogin}
@@ -246,7 +209,6 @@ function AuthBody({
         <SignupForm
           email={email}
           onChangeEmail={onChangeEmail}
-          onBackToEntry={onBackToEntry}
           onLogin={onBackToLogin}
           onSubmit={onSignup}
           submitting={submitting}
@@ -257,8 +219,7 @@ function AuthBody({
       return (
         <div className="space-y-5">
           <p className="text-13 leading-relaxed text-ink-secondary">
-            Password reset isn’t available yet. We’ll add self-service password recovery in a
-            future release.
+            Self-service password recovery will be available in an upcoming update. Please contact your institution administrator if you need your password reset.
           </p>
           <Button variant="secondary" className="w-full" onClick={onBackToLogin}>
             Back to log in

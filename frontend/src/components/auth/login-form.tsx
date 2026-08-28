@@ -5,15 +5,14 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
+import { isValidEmail } from "@/lib/auth/email";
 
 /**
- * Password login step for the email already entered on the entry screen.
- * Calls the real platform login endpoint through the existing auth provider —
- * this file never talks to the platform API directly.
+ * Direct single-screen login form: Email + Password with instant sign-in.
  */
 export function LoginForm({
   email,
-  onBackToEntry,
+  onChangeEmail,
   onForgot,
   onSignup,
   onSubmit,
@@ -21,7 +20,7 @@ export function LoginForm({
   error,
 }: {
   email: string;
-  onBackToEntry: () => void;
+  onChangeEmail: (email: string) => void;
   onForgot: () => void;
   onSignup: () => void;
   onSubmit: (email: string, password: string) => void;
@@ -31,7 +30,7 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
 
-  const canSubmit = password.length > 0 && !submitting;
+  const canSubmit = isValidEmail(email) && password.length > 0 && !submitting;
 
   return (
     <div className="space-y-5">
@@ -43,26 +42,48 @@ export function LoginForm({
         className="space-y-4"
       >
         <div>
-          <span className="mb-1.5 block text-13 font-medium text-ink">Email</span>
-          <div className="flex h-11 items-center rounded-md border border-border bg-subtle/50 px-3.5 text-14 text-ink">
-            {email}
-          </div>
+          <label
+            htmlFor="auth-email"
+            className="mb-1.5 block text-13 font-medium text-ink"
+          >
+            Email address
+          </label>
+          <Input
+            id="auth-email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+            autoFocus={!email}
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => onChangeEmail(e.target.value)}
+          />
         </div>
 
         <div>
-          <label
-            htmlFor="auth-password"
-            className="mb-1.5 block text-13 font-medium text-ink"
-          >
-            Password
-          </label>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label
+              htmlFor="auth-password"
+              className="text-13 font-medium text-ink"
+            >
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={onForgot}
+              className="focus-ring rounded-sm text-12 text-accent hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
           <div className="relative">
             <Input
               id="auth-password"
               type={show ? "text" : "password"}
               autoComplete="current-password"
               required
-              autoFocus
+              autoFocus={Boolean(email)}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -90,23 +111,6 @@ export function LoginForm({
           {submitting ? "Logging in…" : "Log in"}
         </Button>
       </form>
-
-      <div className="flex items-center justify-between gap-2 text-13">
-        <button
-          type="button"
-          onClick={onBackToEntry}
-          className="focus-ring rounded-sm text-ink-secondary hover:text-ink"
-        >
-          ← Use another email
-        </button>
-        <button
-          type="button"
-          onClick={onForgot}
-          className="focus-ring rounded-sm text-accent hover:underline"
-        >
-          Forgot password?
-        </button>
-      </div>
 
       <p className="text-center text-13 text-ink-secondary">
         New to Mwalimu?{" "}
