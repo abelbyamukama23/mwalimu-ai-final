@@ -1,7 +1,8 @@
 "use client";
 
-import { CheckmarkCircle01Icon, Globe02Icon } from "hugeicons-react";
+import { CheckmarkCircle01Icon } from "hugeicons-react";
 import { Badge } from "@/components/ui/badge";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/lib/hooks/use-current-user";
@@ -53,8 +54,10 @@ export function ConnectedAccountsSection() {
               className="flex items-center justify-between py-4"
             >
               <div className="max-w-md space-y-1">
-                <div className="flex items-center gap-2">
-                  <Globe02Icon size={18} className="text-ink-tertiary" />
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-6 w-6 items-center justify-center">
+                    <BrandIcon name={prov.id} size={18} />
+                  </div>
                   <span className="text-14 font-medium text-ink">
                     {prov.name}
                   </span>

@@ -5,10 +5,10 @@ import Link from "next/link";
 import {
   ArrowRight01Icon,
   Book02Icon,
-  HardDriveIcon,
   Search01Icon,
 } from "hugeicons-react";
 
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Input } from "@/components/ui/input";
 import { useConnectors } from "@/lib/hooks/use-connectors";
 import { useLibraries } from "@/lib/hooks/use-libraries";
@@ -88,27 +88,29 @@ export default function ConnectionsPage() {
         {/* Top App Icons Strip (ChatGPT-style) */}
         <div className="flex items-center gap-3 overflow-x-auto rounded-xl border border-border/60 bg-surface p-3 shadow-2xs">
           <span className="text-11 font-medium text-ink-tertiary px-2 shrink-0">
-            Available Workspaces:
+            Supported Workspaces:
           </span>
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted p-1.5" title="Google Drive">
-              <svg className="h-full w-full" viewBox="0 0 87.3 78" fill="none">
-                <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H6.6c-4.4 0-7.3 4.4-4.8 8.2z" fill="#0066DA" />
-                <path d="M43.65 25L29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3L1.8 45.7c-2.2 3.8.7 8.6 5.1 8.6h27.5L43.65 25z" fill="#00AC47" />
-                <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.8c2.2-3.8-.7-8.6-5.1-8.6H43.65l13.75 23.8c4.35 0 7.35-4.35 16.15-9.1z" fill="#EA4335" />
-                <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.85 0H34.45c-1.65 0-3.2.4-4.55 1.2L43.65 25z" fill="#00832D" />
-                <path d="M57.4 1.2L43.65 25l13.75 23.8h27.5c4.4 0 7.3-4.8 5.1-8.6L60.7 4.5c-.8-1.4-1.95-2.5-3.3-3.3z" fill="#FFBA00" />
-                <path d="M73.55 76.8H27.5l-13.75-23.8h59.8l13.75 23.8c-.8.8-1.9 1.4-3.1 1.7-.2.2-.4.4-.6.6z" fill="#2684FC" />
-              </svg>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted p-1" title="Google Drive">
+              <BrandIcon name="google_drive" size={18} />
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted font-serif text-14 font-bold text-ink" title="Notion">
-              N
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted p-1" title="Notion">
+              <BrandIcon name="notion" size={18} />
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted text-[#FF9900]" title="Amazon S3">
-              <HardDriveIcon size={16} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted p-1" title="Google Classroom / Docs">
+              <BrandIcon name="google_docs" size={18} />
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted text-accent" title="Local Academic Storage">
-              <HardDriveIcon size={16} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted p-1" title="Amazon S3">
+              <BrandIcon name="s3" size={18} />
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted p-1" title="Moodle LMS">
+              <BrandIcon name="moodle" size={18} />
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted p-1" title="Canvas LMS">
+              <BrandIcon name="canvas" size={18} />
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted p-1" title="Local Academic Storage">
+              <BrandIcon name="file_system" size={18} />
             </div>
           </div>
         </div>
