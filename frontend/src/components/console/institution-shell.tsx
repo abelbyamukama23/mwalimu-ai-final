@@ -39,8 +39,9 @@ const CONSOLE_NAV: ConsoleNavItem[] = [
   { id: "access", label: "Access", icon: Lock },
   { id: "resources", label: "Resources", icon: FileText },
   { id: "context", label: "Context", icon: MapPin },
-  { id: "connectors", label: "Connectors", icon: Plug },
+  { id: "connections", label: "Connections", icon: Plug },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
+
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 

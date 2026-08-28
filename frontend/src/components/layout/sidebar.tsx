@@ -230,13 +230,13 @@ export function SidebarContent() {
           active={pathname.startsWith("/libraries")}
         />
         <NavItem
-          href="/connectors"
+          href="/connections"
           icon={Plug}
-          label="Connectors"
-          active={pathname.startsWith("/connectors")}
-          trailing={<Badge tone="warning">Soon</Badge>}
+          label="Connections"
+          active={pathname.startsWith("/connections") || pathname.startsWith("/connectors")}
         />
       </nav>
+
 
       <p className="mb-1 mt-5 px-3 text-11 font-medium tracking-wide text-ink-tertiary">
         RECENT
