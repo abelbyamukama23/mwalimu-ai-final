@@ -250,19 +250,8 @@ export default function LibraryDetailPage() {
               <span className="font-mono text-11">slug: {library.slug}</span>
             </div>
           </div>
-
-          {canManage && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setCreateConnOpen(true)}
-              >
-                <Plus size={14} aria-hidden /> Add connection
-              </Button>
-            </div>
-          )}
         </div>
+
 
         {/* Library Content Tabs */}
         <Tabs defaultValue="resources">
@@ -338,8 +327,8 @@ export default function LibraryDetailPage() {
                             connector={c}
                             libraryId={libraryId ?? ""}
                             existingConnection={existing}
-                            onOpenManualConfig={() => setCreateConnOpen(true)}
                           />
+
                         );
                       })}
                   </div>
