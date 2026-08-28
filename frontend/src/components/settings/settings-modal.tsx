@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Search, X } from "lucide-react";
+import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import {
   createContext,
   useCallback,
@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -188,11 +189,12 @@ function SettingsModal({
                 </DialogPrimitive.Close>
               </div>
               <div className="relative">
-                <Search
-                  size={13}
+                <MagnifyingGlass
+                  size={14}
                   aria-hidden
                   className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-tertiary"
                 />
+
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}

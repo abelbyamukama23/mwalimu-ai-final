@@ -1,6 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { DownloadSimple } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -89,7 +89,7 @@ export function PrivacySection() {
             disabled={exporting}
             onClick={handleExportData}
           >
-            <Download size={13} className="mr-1.5" />
+            <DownloadSimple size={15} weight="bold" className="mr-1.5" />
             {exporting ? "Preparing…" : "Export archive"}
           </Button>
         </SettingRow>
@@ -97,3 +97,4 @@ export function PrivacySection() {
     </div>
   );
 }
+

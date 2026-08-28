@@ -1,7 +1,8 @@
 "use client";
 
-import { BookOpen, Compass, Lightbulb } from "lucide-react";
+import { BookOpen, Compass, Lightbulb } from "@phosphor-icons/react";
 import { useToast } from "@/components/ui/toast";
+
 import {
   useUpdateUserPreferences,
   useUserPreferences,

@@ -1,8 +1,9 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 import type { ComponentProps, ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 import { IconButton } from "./icon-button";
 

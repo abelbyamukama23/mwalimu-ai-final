@@ -1,15 +1,15 @@
 "use client";
 
 import {
-  Building2,
-  Languages,
-  LogOut,
+  Buildings,
+  Gear,
+  Globe,
   MapPin,
-  Palette,
-  Settings,
-  Sparkles,
+  PaintBrush,
+  SignOut,
+  Sparkle,
   UserCircle,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSettingsModal } from "@/components/settings/settings-modal";
@@ -25,12 +25,12 @@ import {
 /** Account-menu entries → Settings modal sections. */
 const MENU = [
   { id: "general", icon: UserCircle, label: "Profile" },
-  { id: "general", icon: Settings, label: "Settings" },
+  { id: "general", icon: Gear, label: "Settings" },
   { id: "familiar-regions", icon: MapPin, label: "Familiar regions" },
-  { id: "institution", icon: Building2, label: "Institution" },
-  { id: "appearance", icon: Palette, label: "Appearance" },
-  { id: "language", icon: Languages, label: "Language" },
-  { id: "learning", icon: Sparkles, label: "Preferences" },
+  { id: "institution", icon: Buildings, label: "Institution" },
+  { id: "appearance", icon: PaintBrush, label: "Appearance" },
+  { id: "language", icon: Globe, label: "Language" },
+  { id: "learning", icon: Sparkle, label: "Preferences" },
 ] as const;
 
 /**
@@ -55,16 +55,17 @@ export function AccountMenu({ trigger }: { trigger: ReactNode }) {
           const Icon = item.icon;
           return (
             <DropdownMenuItem key={item.label} onClick={() => openSettings(item.id)}>
-              <Icon size={16} aria-hidden className="text-ink-tertiary" /> {item.label}
+              <Icon size={18} weight="duotone" aria-hidden className="text-ink-tertiary" /> {item.label}
             </DropdownMenuItem>
           );
         })}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
-          <LogOut size={16} aria-hidden className="text-ink-tertiary" />
+          <SignOut size={18} weight="duotone" aria-hidden className="text-ink-tertiary" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
+

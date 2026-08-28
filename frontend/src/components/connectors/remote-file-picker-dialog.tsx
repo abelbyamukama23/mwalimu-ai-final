@@ -2,16 +2,17 @@
 
 import { useMemo, useState } from "react";
 import {
-  ChevronRight,
-  File,
+  ArrowsClockwise,
+  CaretRight,
   FileCode,
+  FileDoc,
+  FilePdf,
   FileText,
   Folder,
   FolderOpen,
-  Loader2,
-  RefreshCw,
-  Search,
-} from "lucide-react";
+  MagnifyingGlass,
+  SpinnerGap,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,26 +45,27 @@ function formatBytes(bytes?: number): string {
 
 function getFileIcon(item: RemoteFileItem) {
   if (item.type === "folder") {
-    return <Folder className="h-4 w-4 text-brand" />;
+    return <Folder size={18} weight="duotone" className="text-brand shrink-0" />;
   }
   const mime = item.mime_type || "";
   const name = item.name.toLowerCase();
   if (mime.includes("pdf") || name.endsWith(".pdf")) {
-    return <FileText className="h-4 w-4 text-danger" />;
+    return <FilePdf size={18} weight="duotone" className="text-danger shrink-0" />;
   }
   if (
     mime.includes("document") ||
     mime.includes("text") ||
     name.endsWith(".docx") ||
-    name.endsWith(".txt")
+    name.endsWith(".doc")
   ) {
-    return <FileText className="h-4 w-4 text-info" />;
+    return <FileDoc size={18} weight="duotone" className="text-info shrink-0" />;
   }
-  if (name.endsWith(".py") || name.endsWith(".ts") || name.endsWith(".js")) {
-    return <FileCode className="h-4 w-4 text-warning" />;
+  if (name.endsWith(".py") || name.endsWith(".ts") || name.endsWith(".js") || name.endsWith(".json")) {
+    return <FileCode size={18} weight="duotone" className="text-warning shrink-0" />;
   }
-  return <File className="h-4 w-4 text-ink-tertiary" />;
+  return <FileText size={18} weight="duotone" className="text-ink-tertiary shrink-0" />;
 }
+
 
 export function RemoteFilePickerDialog({
   libraryId,
@@ -154,7 +156,7 @@ export function RemoteFilePickerDialog({
         {/* Search bar & Refresh */}
         <div className="flex items-center gap-2 border-b border-border pb-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-tertiary" />
+            <MagnifyingGlass size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -168,7 +170,7 @@ export function RemoteFilePickerDialog({
             onClick={() => void refetch()}
             className="h-9 gap-1.5 text-12 text-ink-secondary"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <ArrowsClockwise size={14} weight="bold" />
             Refresh
           </Button>
         </div>
@@ -178,7 +180,7 @@ export function RemoteFilePickerDialog({
           <div className="my-2 flex items-center gap-1 text-11 text-ink-secondary">
             {breadcrumbs.map((crumb, idx) => (
               <div key={crumb.id} className="flex items-center gap-1">
-                {idx > 0 && <ChevronRight className="h-3 w-3 text-ink-tertiary" />}
+                {idx > 0 && <CaretRight size={12} weight="bold" className="text-ink-tertiary" />}
                 <button
                   type="button"
                   onClick={() => navigateToBreadcrumb(idx)}
@@ -195,7 +197,7 @@ export function RemoteFilePickerDialog({
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading ? (
             <div className="flex h-48 flex-col items-center justify-center gap-2 text-ink-tertiary">
-              <Loader2 className="h-5 w-5 animate-spin text-brand" />
+              <SpinnerGap size={22} className="animate-spin text-brand" />
               <span className="text-12">Loading remote files…</span>
             </div>
           ) : isError || data?.error ? (
@@ -215,11 +217,12 @@ export function RemoteFilePickerDialog({
             </div>
           ) : items.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center gap-1.5 text-center text-ink-tertiary">
-              <FolderOpen className="h-8 w-8 stroke-1" />
+              <FolderOpen size={36} weight="duotone" className="text-ink-tertiary" />
               <p className="text-13 font-medium text-ink">No files found</p>
               <p className="text-11">This folder appears to be empty or has no matching documents.</p>
             </div>
           ) : (
+
             <div className="divide-y divide-border/50">
               {items.map((item) => {
                 const isSelected = selectedIds.has(item.id);
@@ -306,10 +309,11 @@ export function RemoteFilePickerDialog({
             >
               {syncMutation.isPending ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <SpinnerGap size={14} className="animate-spin" />
                   Syncing…
                 </>
               ) : (
+
                 "Sync Now"
               )}
             </Button>

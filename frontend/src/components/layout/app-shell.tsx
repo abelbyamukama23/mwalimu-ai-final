@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { List, SidebarSimple } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { SidebarContent } from "@/components/layout/sidebar";
@@ -46,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 onClick={() => setCollapsed(false)}
                 className="text-ink-secondary hover:text-ink"
               >
-                <PanelLeftOpen size={18} />
+                <SidebarSimple size={18} weight="duotone" />
               </IconButton>
             ) : (
               <>
@@ -63,11 +63,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onClick={() => setCollapsed(true)}
                   className="text-ink-secondary hover:text-ink"
                 >
-                  <PanelLeftClose size={18} />
+                  <SidebarSimple size={18} weight="duotone" />
                 </IconButton>
               </>
             )}
           </div>
+
 
           {!collapsed && (
             <div className="min-h-0 flex-1">
@@ -83,8 +84,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         onClick={() => setNavOpen(true)}
         className="fixed left-3 top-3 z-30 rounded-md border border-border bg-surface/90 shadow-overlay lg:hidden"
       >
-        <Menu size={18} />
+        <List size={18} weight="bold" />
       </IconButton>
+
 
       {/* Mobile navigation drawer */}
       <Drawer open={navOpen} onOpenChange={setNavOpen}>

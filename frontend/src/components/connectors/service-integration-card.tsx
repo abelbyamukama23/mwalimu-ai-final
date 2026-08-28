@@ -3,19 +3,19 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowSquareOut,
+  ArrowsClockwise,
   Check,
-  CheckCircle2,
-  ExternalLink,
-  FolderSearch,
+  CheckCircle,
+  DotsThree,
+  FolderOpen,
   Globe,
   HardDrive,
-  Layers,
-  Loader2,
-  MoreHorizontal,
   Plus,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+  SpinnerGap,
+  Trash,
+} from "@phosphor-icons/react";
+
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -210,7 +210,7 @@ export function ServiceIntegrationCard({
                 onClick={() => setIsPickerOpen(true)}
                 className="h-8 gap-1.5 rounded-lg px-3 text-12 font-medium"
               >
-                <FolderSearch className="h-3.5 w-3.5 text-accent" />
+                <FolderOpen size={15} weight="duotone" className="text-accent" />
                 Browse
               </Button>
 
@@ -222,7 +222,7 @@ export function ServiceIntegrationCard({
                     className="h-8 w-8 rounded-lg p-0 text-ink-secondary hover:text-ink"
                     aria-label="More options"
                   >
-                    <MoreHorizontal className="h-4 w-4" />
+                    <DotsThree size={18} weight="bold" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-36">
@@ -231,8 +231,10 @@ export function ServiceIntegrationCard({
                     onClick={handleQuickSync}
                     className="gap-2 text-12 cursor-pointer"
                   >
-                    <RefreshCw
-                      className={`h-3.5 w-3.5 ${syncMutation.isPending ? "animate-spin" : ""}`}
+                    <ArrowsClockwise
+                      size={14}
+                      weight="bold"
+                      className={syncMutation.isPending ? "animate-spin" : ""}
                     />
                     Sync Now
                   </DropdownMenuItem>
@@ -240,7 +242,7 @@ export function ServiceIntegrationCard({
                     onClick={handleDisconnect}
                     className="gap-2 text-12 text-danger focus:text-danger cursor-pointer"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash size={14} weight="bold" />
                     Disconnect
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -255,12 +257,12 @@ export function ServiceIntegrationCard({
             >
               {isAuthorizing ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <SpinnerGap size={14} className="animate-spin" />
                   Connecting
                 </>
               ) : (
                 <>
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus size={14} weight="bold" />
                   Connect
                 </>
               )}
@@ -268,6 +270,7 @@ export function ServiceIntegrationCard({
           )}
         </div>
       </div>
+
 
       {/* Remote Picker Dialog */}
       {existingConnection && (

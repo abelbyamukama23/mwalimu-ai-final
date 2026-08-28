@@ -1,14 +1,15 @@
 "use client";
 
-import { Check, type LucideIcon } from "lucide-react";
+import { Check, type Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 export type RadioCardOption<T extends string> = {
   value: T;
   label: string;
   description?: string;
-  icon?: LucideIcon;
+  icon?: Icon;
 };
+
 
 export function SettingRadioCards<T extends string>({
   options,

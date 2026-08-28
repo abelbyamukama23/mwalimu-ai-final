@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { Sparkle } from "@phosphor-icons/react";
 import type { Citation } from "@/lib/chat/chat-api";
 import { cn } from "@/lib/utils";
 
@@ -34,8 +34,9 @@ export function GroundingIndicator({ citations, className }: GroundingIndicatorP
         className,
       )}
     >
-      <Sparkles className="h-3 w-3 text-accent shrink-0" aria-hidden="true" />
+      <Sparkle size={13} weight="fill" className="text-accent shrink-0" aria-hidden="true" />
       <span>{label}</span>
     </div>
   );
 }
+

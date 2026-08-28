@@ -1,14 +1,11 @@
 "use client";
 
 import {
-  Download,
-  FileCode2,
-  FileSpreadsheet,
-  FileText,
-  Loader2,
-  MoreVertical,
-  Trash2,
-} from "lucide-react";
+  DownloadSimple,
+  SpinnerGap,
+  Trash,
+} from "@phosphor-icons/react";
+
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,7 +94,7 @@ export function ResourceCard({
               className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-tertiary transition-colors hover:bg-surface-hover hover:text-ink focus-ring"
               title="Download original file"
             >
-              <Download size={14} aria-hidden />
+              <DownloadSimple size={16} weight="bold" aria-hidden />
             </a>
 
             {canManage && (
@@ -107,7 +104,7 @@ export function ResourceCard({
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-tertiary transition-colors hover:bg-danger-subtle hover:text-danger focus-ring"
                 title="Delete resource"
               >
-                <Trash2 size={14} aria-hidden />
+                <Trash size={16} weight="bold" aria-hidden />
               </button>
             )}
           </div>
@@ -139,7 +136,7 @@ export function ResourceCard({
             </Badge>
           ) : isProcessing ? (
             <Badge tone="accent">
-              <Loader2 size={10} className="mr-1 animate-spin inline" />
+              <SpinnerGap size={12} className="mr-1 animate-spin inline" />
               Chunking…
             </Badge>
           ) : isFailed ? (
@@ -148,6 +145,7 @@ export function ResourceCard({
             <Badge tone="neutral">Queued</Badge>
           )}
         </div>
+
 
         <span>
           {new Date(resource.created_at).toLocaleDateString(undefined, {

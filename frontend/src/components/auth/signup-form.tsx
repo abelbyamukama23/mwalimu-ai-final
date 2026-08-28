@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeSlash } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +87,7 @@ export function SignupForm({
               onClick={() => setShowPassword((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2"
             >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              {showPassword ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
             </IconButton>
           </div>
         </div>
@@ -117,10 +117,11 @@ export function SignupForm({
               onClick={() => setShowConfirm((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2"
             >
-              {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+              {showConfirm ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
             </IconButton>
           </div>
         </div>
+
 
         {error && (
           <p role="alert" className="rounded-sm bg-red-50 px-3 py-2 text-12 text-red-700">

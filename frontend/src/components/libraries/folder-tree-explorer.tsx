@@ -1,22 +1,20 @@
 "use client";
 
 import {
-  ChevronRight,
-  Download,
-  FileCode2,
-  FileSpreadsheet,
-  FileText,
+  CaretRight,
+  DownloadSimple,
   Folder,
   FolderPlus,
-  Grid,
-  Home,
-  LayoutGrid,
-  List,
+  FolderSimple,
+  GridFour,
+  House,
+  ListDashes,
+  MagnifyingGlass,
   Plus,
-  Search,
-  Trash2,
-  Upload,
-} from "lucide-react";
+  Trash,
+  UploadSimple,
+} from "@phosphor-icons/react";
+
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -155,13 +153,13 @@ export function FolderTreeExplorer({
             onClick={() => handleNavigateToBreadcrumb(-1)}
             className="flex items-center gap-1 font-semibold text-ink-secondary hover:text-accent focus-ring rounded px-1.5 py-0.5"
           >
-            <Home size={14} className="text-accent" aria-hidden />
+            <House size={16} weight="duotone" className="text-accent" aria-hidden />
             <span>Root</span>
           </button>
 
           {currentPath.map((seg, idx) => (
             <div key={idx} className="flex items-center gap-1">
-              <ChevronRight size={13} className="text-ink-tertiary" />
+              <CaretRight size={12} weight="bold" className="text-ink-tertiary" />
               <button
                 type="button"
                 onClick={() => handleNavigateToBreadcrumb(idx)}
@@ -181,8 +179,8 @@ export function FolderTreeExplorer({
         <div className="flex items-center gap-2">
           {/* Search within folder */}
           <div className="relative">
-            <Search
-              size={13}
+            <MagnifyingGlass
+              size={14}
               className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-tertiary"
             />
             <input
@@ -205,7 +203,7 @@ export function FolderTreeExplorer({
               }`}
               title="Grid card view"
             >
-              <LayoutGrid size={14} />
+              <GridFour size={16} weight={viewMode === "grid" ? "fill" : "regular"} />
             </button>
             <button
               type="button"
@@ -217,7 +215,7 @@ export function FolderTreeExplorer({
               }`}
               title="Table list view"
             >
-              <List size={14} />
+              <ListDashes size={16} weight={viewMode === "table" ? "bold" : "regular"} />
             </button>
           </div>
 
@@ -228,17 +226,18 @@ export function FolderTreeExplorer({
                 size="sm"
                 onClick={() => setNewFolderOpen(true)}
               >
-                <FolderPlus size={13} aria-hidden /> New folder
+                <FolderPlus size={15} weight="duotone" aria-hidden /> New folder
               </Button>
               <Button
                 size="sm"
                 onClick={() => setUploadOpen(true)}
               >
-                <Upload size={13} aria-hidden /> Upload
+                <UploadSimple size={15} weight="bold" aria-hidden /> Upload
               </Button>
             </>
           )}
         </div>
+
       </div>
 
       {/* New Folder Inline Form */}
@@ -302,7 +301,7 @@ export function FolderTreeExplorer({
 
                   <div className="flex items-center gap-2">
                     <Badge tone="neutral">{count} {count === 1 ? "item" : "items"}</Badge>
-                    <ChevronRight size={14} className="text-ink-tertiary" />
+                    <CaretRight size={14} className="text-ink-tertiary" />
                   </div>
                 </button>
               );
@@ -324,11 +323,12 @@ export function FolderTreeExplorer({
           action={
             canManage ? (
               <Button onClick={() => setUploadOpen(true)}>
-                <Upload size={14} aria-hidden /> Upload resource here
+                <UploadSimple size={14} weight="bold" aria-hidden /> Upload resource here
               </Button>
             ) : undefined
           }
         />
+
       ) : currentFileList.length > 0 && viewMode === "grid" ? (
         /* Grid Display Cards */
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -389,7 +389,8 @@ export function FolderTreeExplorer({
                       className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-tertiary hover:bg-surface hover:text-ink focus-ring"
                       title="Download"
                     >
-                      <Download size={14} />
+                      <DownloadSimple size={16} weight="bold" />
+
                     </a>
                   </div>
                 </div>

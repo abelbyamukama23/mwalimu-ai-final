@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, Stop } from "@phosphor-icons/react";
 import {
   forwardRef,
   useCallback,
@@ -23,7 +23,7 @@ export type ComposerHandle = { setValue: (value: string) => void; focus: () => v
 /**
  * Polished auto-growing composer.
  * Enter sends, Shift+Enter inserts a newline, send is disabled while empty,
- * and morphs into Stop while a run executes (wired to runs API in Phase 3).
+ * and morphs into Stop while a run executes.
  */
 export const Composer = forwardRef<
   ComposerHandle,
@@ -58,33 +58,34 @@ export const Composer = forwardRef<
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const height = el.scrollHeight;
-    el.style.height = `${Math.min(height, MAX_HEIGHT)}px`;
-    if (height > MAX_HEIGHT) {
-      el.style.overflowY = "auto";
-    } else {
-      el.style.overflowY = "hidden";
-    }
+    el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT)}px`;
   }, []);
 
-  useEffect(resize, [value, resize]);
+  useEffect(() => {
+    resize();
+  }, [value, resize]);
 
-  useImperativeHandle(ref, () => ({
-    setValue: (v: string) => {
-      onChange(v);
-      requestAnimationFrame(resize);
-    },
-    focus: () => textareaRef.current?.focus(),
-  }));
-
-  const canSend = value.trim().length > 0 && !running;
+  useImperativeHandle(
+    ref,
+    () => ({
+      setValue: (val: string) => {
+        onChange(val);
+      },
+      focus: () => {
+        textareaRef.current?.focus();
+      },
+    }),
+    [onChange],
+  );
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (canSend) onSubmit(value.trim());
     }
   };
+
+  const canSend = value.trim().length > 0 && !running;
 
   return (
     <div
@@ -116,7 +117,7 @@ export const Composer = forwardRef<
             aria-label="Stop generating"
             className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors duration-150 hover:bg-accent-hover"
           >
-            <Square size={13} aria-hidden fill="currentColor" />
+            <Stop size={14} weight="fill" aria-hidden />
           </button>
         ) : (
           <button
@@ -130,7 +131,7 @@ export const Composer = forwardRef<
                 : "cursor-not-allowed bg-subtle text-ink-tertiary",
             )}
           >
-            <ArrowUp size={16} aria-hidden />
+            <ArrowUp size={16} weight="bold" aria-hidden />
           </button>
         )}
         </div>

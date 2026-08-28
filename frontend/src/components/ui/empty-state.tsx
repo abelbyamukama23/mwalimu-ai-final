@@ -1,5 +1,4 @@
-import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -12,7 +11,7 @@ export function EmptyState({
   action,
   className,
 }: {
-  icon: LucideIcon;
+  icon: ComponentType<{ size?: number; weight?: "regular" | "bold" | "duotone" | "fill" | "light" | "thin"; className?: string; "aria-hidden"?: boolean }>;
   title: string;
   body: string;
   action?: ReactNode;
@@ -25,8 +24,8 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-subtle">
-        <Icon size={20} className="text-ink-tertiary" aria-hidden />
+      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-subtle">
+        <Icon size={22} weight="duotone" className="text-ink-tertiary" aria-hidden />
       </div>
       <p className="mb-1.5 text-15 font-semibold text-ink">{title}</p>
       <p className="mb-5 text-13 leading-relaxed text-ink-secondary">{body}</p>

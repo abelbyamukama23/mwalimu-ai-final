@@ -1,6 +1,6 @@
 "use client";
 
-import { UserCircle } from "lucide-react";
+import { UserCircle } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { useCurrentUser } from "@/lib/hooks/use-current-user";
 import { useUpdateUserProfile, useUserProfile } from "@/lib/hooks/use-profile";
 import type { UserProfile } from "@/lib/settings/types";
 import { SettingRow } from "../primitives/setting-row";
+
 
 function ProfileForm({ profile }: { profile?: UserProfile }) {
   const updateProfile = useUpdateUserProfile();

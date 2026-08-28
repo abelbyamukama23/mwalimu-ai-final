@@ -2,18 +2,20 @@
 
 import {
   ArrowLeft,
-  Building2,
-  Calendar,
+  ArrowsClockwise,
+  Buildings,
+  CalendarBlank,
+  ClockCounterClockwise,
   FileText,
   FolderOpen,
-  History,
+  Gear,
   Key,
-  Network,
+  PlugsConnected,
   Plus,
-  RefreshCw,
-  Settings,
-  Trash2,
-} from "lucide-react";
+  Trash,
+} from "@phosphor-icons/react";
+
+
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -238,17 +240,18 @@ export default function LibraryDetailPage() {
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-4 text-12 text-ink-tertiary">
               <span className="flex items-center gap-1 font-medium">
-                <Building2 size={13} aria-hidden />
+                <Buildings size={14} weight="duotone" aria-hidden />
                 {isPersonal
                   ? "Personal Knowledge Space"
                   : (library.institution?.name ?? "Institution")}
               </span>
               <span className="flex items-center gap-1">
-                <Calendar size={13} aria-hidden />
+                <CalendarBlank size={14} weight="duotone" aria-hidden />
                 Created {new Date(library.created_at).toLocaleDateString()}
               </span>
               <span className="font-mono text-11">slug: {library.slug}</span>
             </div>
+
           </div>
         </div>
 
@@ -257,20 +260,21 @@ export default function LibraryDetailPage() {
         <Tabs defaultValue="resources">
           <TabsList>
             <TabsTrigger value="resources">
-              <FileText size={14} aria-hidden className="mr-1.5" />
+              <FileText size={16} weight="duotone" aria-hidden className="mr-1.5" />
               Resources ({(resources ?? []).length})
             </TabsTrigger>
             <TabsTrigger value="connections">
-              <Network size={14} aria-hidden className="mr-1.5" />
+              <PlugsConnected size={16} weight="duotone" aria-hidden className="mr-1.5" />
               Connections ({(connections ?? []).length})
             </TabsTrigger>
             {canManage && (
               <TabsTrigger value="settings">
-                <Settings size={14} aria-hidden className="mr-1.5" />
+                <Gear size={16} weight="duotone" aria-hidden className="mr-1.5" />
                 Settings
               </TabsTrigger>
             )}
           </TabsList>
+
 
           {/* Tab: Resources (GitHub-style folder explorer and resource cards) */}
           <TabsContent value="resources">
@@ -399,8 +403,9 @@ export default function LibraryDetailPage() {
                                 }
                                 title="Sync external knowledge now"
                               >
-                                <RefreshCw
-                                  size={14}
+                                <ArrowsClockwise
+                                  size={15}
+                                  weight="bold"
                                   className={
                                     conn.status === "syncing"
                                       ? "animate-spin"
@@ -422,7 +427,7 @@ export default function LibraryDetailPage() {
                               }
                               title="View synchronization job history"
                             >
-                              <History size={14} aria-hidden /> History
+                              <ClockCounterClockwise size={15} weight="duotone" aria-hidden /> History
                             </Button>
                             {canManage && (
                               <Button
@@ -433,10 +438,11 @@ export default function LibraryDetailPage() {
                                 className="text-danger hover:bg-danger/10"
                                 title="Delete connection"
                               >
-                                <Trash2 size={14} aria-hidden />
+                                <Trash size={16} weight="bold" aria-hidden />
                               </Button>
                             )}
                           </div>
+
                         </div>
                       ))}
                     </div>
@@ -541,8 +547,9 @@ export default function LibraryDetailPage() {
                     onClick={handleDeleteLibrary}
                     disabled={deleteMutation.isPending}
                   >
-                    <Trash2 size={14} aria-hidden /> Delete Library
+                    <Trash size={14} weight="bold" aria-hidden /> Delete Library
                   </Button>
+
                 </div>
               </div>
             </TabsContent>

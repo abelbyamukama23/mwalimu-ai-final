@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ExternalLink, Lock } from "lucide-react";
+import { ArrowSquareOut, Lock } from "@phosphor-icons/react";
+
 
 import { Button } from "@/components/ui/button";
 import {
@@ -282,9 +283,10 @@ export function CreateConnectionModal({
                     onClick={handleOAuthAuthorize}
                     className="inline-flex items-center gap-1.5 border-brand/30 text-brand hover:bg-brand-surface"
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    <ArrowSquareOut size={15} weight="bold" />
                     {isAuthorizingOAuth ? "Redirecting…" : `Authorize with ${selectedConnector.name}`}
                   </Button>
+
                 </div>
               )}
 

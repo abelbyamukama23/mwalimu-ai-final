@@ -3,14 +3,14 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  BookOpen,
-  FolderSync,
-  HardDrive,
-  Layers,
-  Search,
-  Sparkles,
   ArrowRight,
-} from "lucide-react";
+  Books,
+  FolderSimple,
+  HardDrive,
+  MagnifyingGlass,
+  Sparkle,
+} from "@phosphor-icons/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +78,7 @@ export default function ConnectionsPage() {
 
           {/* Search Input */}
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-tertiary" />
+            <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-tertiary" />
             <Input
               type="search"
               placeholder="Search connections…"
@@ -124,7 +124,7 @@ export default function ConnectionsPage() {
           </div>
         ) : !libraries || libraries.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-8 text-center">
-            <BookOpen className="mx-auto h-10 w-10 text-ink-tertiary" />
+            <Books className="mx-auto h-10 w-10 text-ink-tertiary" />
             <h3 className="mt-3 text-15 font-semibold text-ink">
               Create a study library first
             </h3>
@@ -160,12 +160,13 @@ export default function ConnectionsPage() {
                           : "bg-surface border border-border text-ink-secondary hover:bg-subtle hover:text-ink"
                       }`}
                     >
-                      <BookOpen size={12} aria-hidden />
+                      <Books size={14} weight="duotone" aria-hidden />
                       {lib.name}
                     </button>
                   );
                 })}
               </div>
+
 
               <Link
                 href={`/libraries/${currentLibraryId}`}

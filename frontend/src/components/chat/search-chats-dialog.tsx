@@ -1,7 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { MessageSquare, Search, SearchX } from "lucide-react";
+import {
+  ChatCircleText,
+  MagnifyingGlass,
+  MagnifyingGlassMinus,
+} from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -62,8 +66,8 @@ export function SearchChatsDialog({
         />
 
         <div className="relative mb-3">
-          <Search
-            size={15}
+          <MagnifyingGlass
+            size={16}
             aria-hidden
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
           />
@@ -83,7 +87,7 @@ export function SearchChatsDialog({
 
         {results.length === 0 ? (
           <EmptyState
-            icon={SearchX}
+            icon={MagnifyingGlassMinus}
             title="No conversations found"
             body="Try a different keyword."
           />
@@ -95,8 +99,9 @@ export function SearchChatsDialog({
                   onClick={() => openConversation(session.id)}
                   className="focus-ring flex w-full items-start gap-2.5 rounded-sm px-2 py-2 text-left transition-colors duration-150 hover:bg-subtle"
                 >
-                  <MessageSquare
-                    size={15}
+                  <ChatCircleText
+                    size={18}
+                    weight="duotone"
                     aria-hidden
                     className="mt-0.5 shrink-0 text-ink-tertiary"
                   />
@@ -117,3 +122,5 @@ export function SearchChatsDialog({
     </Dialog>
   );
 }
+
+

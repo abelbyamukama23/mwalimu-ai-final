@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Image as ImageIcon, Library, Plus } from "lucide-react";
+import { Books, FileText, Image, Plus } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { IconButton } from "@/components/ui/icon-button";
@@ -9,9 +9,10 @@ import { Separator } from "@/components/ui/separator";
 
 const ATTACHMENTS = [
   { icon: FileText, label: "Upload a document" },
-  { icon: ImageIcon, label: "Add an image" },
-  { icon: Library, label: "Add a learning resource" },
+  { icon: Image, label: "Add an image" },
+  { icon: Books, label: "Add a learning resource" },
 ] as const;
+
 
 /**
  * Composer "+"/add control. Attachment ingestion is not yet implemented on the

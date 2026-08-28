@@ -1,6 +1,6 @@
 "use client";
 
-import { Laptop, Moon, Sun } from "lucide-react";
+import { Desktop, Moon, Sun } from "@phosphor-icons/react";
 import { useToast } from "@/components/ui/toast";
 import { useDevicePreferences } from "@/lib/settings/local-store";
 import type { DisplayDensity, ThemeMode } from "@/lib/settings/types";
@@ -13,7 +13,7 @@ const THEME_OPTIONS = [
     value: "system" as ThemeMode,
     label: "System",
     description: "Matches your operating system's visual appearance.",
-    icon: Laptop,
+    icon: Desktop,
   },
   {
     value: "light" as ThemeMode,
@@ -28,6 +28,7 @@ const THEME_OPTIONS = [
     icon: Moon,
   },
 ];
+
 
 const DENSITY_OPTIONS = [
   { value: "comfortable" as DisplayDensity, label: "Comfortable (Standard)" },

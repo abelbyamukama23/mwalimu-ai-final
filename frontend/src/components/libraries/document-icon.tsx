@@ -2,19 +2,20 @@
 
 import {
   FileCode,
-  FileCode2,
-  FilePieChart,
-  FileSpreadsheet,
+  FileDoc,
+  FilePdf,
+  FilePpt,
   FileText,
+  FileXls,
   Globe,
-  Image as ImageIcon,
-  type LucideIcon,
-} from "lucide-react";
+  Image,
+  type Icon,
+} from "@phosphor-icons/react";
 
 export type DocumentTypeInfo = {
   label: string;
   ext: string;
-  icon: LucideIcon;
+  icon: Icon;
   textColor: string;
   bgColor: string;
   borderColor: string;
@@ -29,7 +30,7 @@ export function getDocumentTypeInfo(filenameOrType: string): DocumentTypeInfo {
       return {
         label: "PDF",
         ext: "pdf",
-        icon: FileText,
+        icon: FilePdf,
         textColor: "text-red-600 dark:text-red-400",
         bgColor: "bg-red-500/10 dark:bg-red-500/15",
         borderColor: "border-red-500/25",
@@ -39,7 +40,7 @@ export function getDocumentTypeInfo(filenameOrType: string): DocumentTypeInfo {
       return {
         label: "Word",
         ext: "docx",
-        icon: FileText,
+        icon: FileDoc,
         textColor: "text-blue-600 dark:text-blue-400",
         bgColor: "bg-blue-500/10 dark:bg-blue-500/15",
         borderColor: "border-blue-500/25",
@@ -50,7 +51,7 @@ export function getDocumentTypeInfo(filenameOrType: string): DocumentTypeInfo {
       return {
         label: "Spreadsheet",
         ext: ext,
-        icon: FileSpreadsheet,
+        icon: FileXls,
         textColor: "text-emerald-600 dark:text-emerald-400",
         bgColor: "bg-emerald-500/10 dark:bg-emerald-500/15",
         borderColor: "border-emerald-500/25",
@@ -60,7 +61,7 @@ export function getDocumentTypeInfo(filenameOrType: string): DocumentTypeInfo {
       return {
         label: "Presentation",
         ext: ext,
-        icon: FilePieChart,
+        icon: FilePpt,
         textColor: "text-amber-600 dark:text-amber-400",
         bgColor: "bg-amber-500/10 dark:bg-amber-500/15",
         borderColor: "border-amber-500/25",
@@ -70,7 +71,7 @@ export function getDocumentTypeInfo(filenameOrType: string): DocumentTypeInfo {
       return {
         label: "Markdown",
         ext: "md",
-        icon: FileCode2,
+        icon: FileCode,
         textColor: "text-purple-600 dark:text-purple-400",
         bgColor: "bg-purple-500/10 dark:bg-purple-500/15",
         borderColor: "border-purple-500/25",
@@ -83,7 +84,7 @@ export function getDocumentTypeInfo(filenameOrType: string): DocumentTypeInfo {
       return {
         label: "Image / OCR",
         ext: ext,
-        icon: ImageIcon,
+        icon: Image,
         textColor: "text-rose-600 dark:text-rose-400",
         bgColor: "bg-rose-500/10 dark:bg-rose-500/15",
         borderColor: "border-rose-500/25",
@@ -105,7 +106,7 @@ export function getDocumentTypeInfo(filenameOrType: string): DocumentTypeInfo {
       return {
         label: "Text",
         ext: "txt",
-        icon: FileCode,
+        icon: FileText,
         textColor: "text-teal-600 dark:text-teal-400",
         bgColor: "bg-teal-500/10 dark:bg-teal-500/15",
         borderColor: "border-teal-500/25",
@@ -121,7 +122,7 @@ export function DocumentIcon({
   size?: "sm" | "md" | "lg";
 }) {
   const info = getDocumentTypeInfo(filenameOrType);
-  const Icon = info.icon;
+  const IconComponent = info.icon;
 
   const sizeClasses = {
     sm: "h-8 w-8 rounded-md text-13",
@@ -130,9 +131,9 @@ export function DocumentIcon({
   };
 
   const iconSizes = {
-    sm: 15,
-    md: 20,
-    lg: 24,
+    sm: 16,
+    md: 22,
+    lg: 26,
   };
 
   return (
@@ -140,7 +141,7 @@ export function DocumentIcon({
       className={`flex shrink-0 items-center justify-center border font-semibold ${sizeClasses[size]} ${info.bgColor} ${info.borderColor} ${info.textColor}`}
       title={`${info.label} Document (${info.ext.toUpperCase()})`}
     >
-      <Icon size={iconSizes[size]} aria-hidden />
+      <IconComponent size={iconSizes[size]} weight="duotone" aria-hidden />
     </div>
   );
 }

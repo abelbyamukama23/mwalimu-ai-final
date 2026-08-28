@@ -2,19 +2,19 @@
 
 import {
   ArrowLeft,
-  BarChart3,
-  Building2,
+  Books,
+  Buildings,
+  ChartBar,
   FileText,
-  LayoutGrid,
-  Library,
+  Gear,
+  GridFour,
+  List,
   Lock,
   MapPin,
-  Menu,
-  Plug,
-  Settings as SettingsIcon,
+  PlugsConnected,
   Users,
-  type LucideIcon,
-} from "lucide-react";
+  type Icon,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -28,21 +28,20 @@ const INSTITUTION_NAME = "Mountains of the Moon University";
 type ConsoleNavItem = {
   id: string;
   label: string;
-  icon: LucideIcon;
+  icon: Icon;
   href?: string; // absent = not yet implemented (disabled, "Soon")
 };
 
 const CONSOLE_NAV: ConsoleNavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutGrid, href: "/console/dashboard" },
+  { id: "dashboard", label: "Dashboard", icon: GridFour, href: "/console/dashboard" },
   { id: "users", label: "Users", icon: Users },
-  { id: "libraries", label: "Libraries", icon: Library },
+  { id: "libraries", label: "Libraries", icon: Books },
   { id: "access", label: "Access", icon: Lock },
   { id: "resources", label: "Resources", icon: FileText },
   { id: "context", label: "Context", icon: MapPin },
-  { id: "connections", label: "Connections", icon: Plug },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
-
-  { id: "settings", label: "Settings", icon: SettingsIcon },
+  { id: "connections", label: "Connections", icon: PlugsConnected },
+  { id: "analytics", label: "Analytics", icon: ChartBar },
+  { id: "settings", label: "Settings", icon: Gear },
 ];
 
 function ConsoleNavContent() {
@@ -55,8 +54,9 @@ function ConsoleNavContent() {
           aria-hidden
           className="flex h-7 w-7 items-center justify-center rounded-sm bg-accent"
         >
-          <Building2 size={14} className="text-white" />
+          <Buildings size={16} weight="duotone" className="text-white" />
         </span>
+
         <span className="text-15 font-semibold text-white">Institution Console</span>
       </div>
       <p className="mb-5 truncate px-2 text-11 text-console-muted">{INSTITUTION_NAME}</p>
@@ -124,8 +124,9 @@ export function InstitutionShell({ children }: { children: ReactNode }) {
 
       <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-canvas px-3 lg:hidden">
         <IconButton aria-label="Open console navigation" onClick={() => setNavOpen(true)}>
-          <Menu size={18} />
+          <List size={18} weight="bold" />
         </IconButton>
+
         <span className="text-15 font-semibold text-ink">Institution Console</span>
       </div>
 

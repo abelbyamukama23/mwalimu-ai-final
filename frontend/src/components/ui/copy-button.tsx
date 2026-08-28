@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy } from "lucide-react";
+import { Check, Copy } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +63,12 @@ export function CopyButton({
         className,
       )}
     >
-      {copied ? <Check size={13} className="text-success-fg" /> : <Copy size={13} />}
+      {copied ? (
+        <Check size={14} weight="bold" className="text-success-fg" />
+      ) : (
+        <Copy size={14} weight="duotone" />
+      )}
     </button>
   );
 }
+

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, MapPin, Plus } from "lucide-react";
+import { CaretDown, Check, MapPin, Plus } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useSettingsModal } from "@/components/settings/settings-modal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -59,9 +59,10 @@ export function KnowledgeScopePopover({
           aria-label={`Knowledge scope: ${active.label}. Change knowledge and context.`}
         >
           Knowledge: {active.label}
-          <ChevronDown size={13} aria-hidden />
+          <CaretDown size={12} weight="bold" aria-hidden />
         </button>
       </PopoverTrigger>
+
       <PopoverContent align="start" side="top" className="w-80">
         <p className="px-1 pb-2 text-11 font-medium tracking-wide text-ink-tertiary">
           KNOWLEDGE SOURCES

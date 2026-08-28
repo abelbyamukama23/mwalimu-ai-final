@@ -1,4 +1,5 @@
-import { Info } from "lucide-react";
+import { Info } from "@phosphor-icons/react/dist/ssr";
+
 
 const STATS = ["Active users", "Institution libraries", "Pending access requests", "Queries this month"] as const;
 

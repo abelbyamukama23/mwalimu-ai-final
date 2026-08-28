@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Globe } from "lucide-react";
+import { CheckCircle, Globe } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -54,17 +54,18 @@ export function ConnectedAccountsSection() {
             >
               <div className="max-w-md space-y-1">
                 <div className="flex items-center gap-2">
-                  <Globe size={16} className="text-ink-tertiary" />
+                  <Globe size={18} weight="duotone" className="text-ink-tertiary" />
                   <span className="text-14 font-medium text-ink">
                     {prov.name}
                   </span>
                   {isConnected && (
                     <Badge tone="success">
-                      <CheckCircle2 size={11} className="mr-1 inline" />
+                      <CheckCircle size={12} weight="fill" className="mr-1 inline" />
                       Connected
                     </Badge>
                   )}
                 </div>
+
                 <p className="text-12 text-ink-secondary leading-relaxed">
                   {prov.description}
                 </p>

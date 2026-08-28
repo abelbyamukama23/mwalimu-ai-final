@@ -1,6 +1,13 @@
 "use client";
 
-import { Building2, FolderPlus, Library as LibraryIcon, Plus, Search } from "lucide-react";
+import {
+  Books,
+  Buildings,
+  FolderPlus,
+  MagnifyingGlass,
+  Plus,
+} from "@phosphor-icons/react";
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CreateLibraryModal } from "@/components/libraries/create-library-modal";
@@ -75,8 +82,8 @@ export default function LibrariesPage() {
         </div>
 
         <div className="relative mb-6 max-w-[400px]">
-          <Search
-            size={15}
+          <MagnifyingGlass
+            size={16}
             aria-hidden
             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-tertiary"
           />
@@ -112,14 +119,10 @@ export default function LibrariesPage() {
               <EmptyState
                 icon={FolderPlus}
                 title="No personal libraries yet"
-                body="Create a personal library for your study notes, uploaded files, or personal cloud sources."
-                action={
-                  <Button
-                    variant="secondary"
-                    onClick={() => setCreateOpen(true)}
-                  >
-                    <Plus size={16} aria-hidden /> Create library
-                  </Button>
+                body={
+                  searchQuery
+                    ? "No personal libraries match your search."
+                    : "Create a personal library to start organizing your study materials and lecture notes."
                 }
               />
             ) : (
@@ -139,13 +142,13 @@ export default function LibrariesPage() {
               </div>
             ) : !hasAnyMembership ? (
               <EmptyState
-                icon={Building2}
+                icon={Buildings}
                 title="No institution connected"
                 body="You don't have an institution connected yet. Mwalimu can still be used independently. Institutional libraries become available after joining an institution."
               />
             ) : institutionLibraries.length === 0 ? (
               <EmptyState
-                icon={LibraryIcon}
+                icon={Books}
                 title="No institutional libraries"
                 body="No libraries have been shared with you in your connected institutions yet."
               />
@@ -166,7 +169,7 @@ export default function LibrariesPage() {
               </div>
             ) : discoverLibraries.length === 0 ? (
               <EmptyState
-                icon={LibraryIcon}
+                icon={Books}
                 title="No discoverable libraries"
                 body="Discoverable libraries published across your institution will appear here."
               />

@@ -1,15 +1,14 @@
 "use client";
 
 import {
-  Building2,
-  CheckCircle2,
+  Buildings,
+  CheckCircle,
   Clock,
-  Plus,
-  School,
+  GraduationCap,
   ShieldCheck,
   User,
   UserPlus,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,7 +80,7 @@ export function InstitutionSection() {
           </div>
         ) : !memberships || memberships.length === 0 ? (
           <div className="rounded-md border border-border bg-surface-sunken p-6 text-center space-y-2">
-            <Building2 size={24} className="mx-auto text-ink-tertiary" />
+            <Buildings size={28} weight="duotone" className="mx-auto text-ink-tertiary" />
             <p className="text-14 font-semibold text-ink">No Institution Connected</p>
             <p className="text-12 text-ink-secondary max-w-md mx-auto leading-relaxed">
               You are currently using Mwalimu in independent personal mode. You can create personal libraries or browse public educational institutions below.
@@ -96,7 +95,7 @@ export function InstitutionSection() {
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-sunken border border-border text-ink-secondary">
-                    <Building2 size={18} />
+                    <Buildings size={20} weight="duotone" />
                   </div>
                   <div>
                     <p className="text-14 font-semibold text-ink">
@@ -114,9 +113,9 @@ export function InstitutionSection() {
                     className="capitalize"
                   >
                     {m.role === "administrator" ? (
-                      <ShieldCheck size={12} className="mr-1 inline" />
+                      <ShieldCheck size={14} weight="duotone" className="mr-1 inline" />
                     ) : (
-                      <User size={12} className="mr-1 inline" />
+                      <User size={14} weight="duotone" className="mr-1 inline" />
                     )}
                     {m.role}
                   </Badge>
@@ -125,9 +124,9 @@ export function InstitutionSection() {
                     className="capitalize"
                   >
                     {m.status === "active" ? (
-                      <CheckCircle2 size={11} className="mr-1 inline" />
+                      <CheckCircle size={13} weight="fill" className="mr-1 inline" />
                     ) : (
-                      <Clock size={11} className="mr-1 inline" />
+                      <Clock size={13} weight="duotone" className="mr-1 inline" />
                     )}
                     {m.status}
                   </Badge>
@@ -156,7 +155,7 @@ export function InstitutionSection() {
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-subtle/30 text-accent border border-accent/20">
-                    <School size={18} />
+                    <GraduationCap size={20} weight="duotone" />
                   </div>
                   <div>
                     <p className="text-14 font-semibold text-ink">
@@ -176,7 +175,7 @@ export function InstitutionSection() {
                     joiningId === inst.id || createMembershipMutation.isPending
                   }
                 >
-                  <UserPlus size={13} aria-hidden /> Join
+                  <UserPlus size={15} weight="bold" aria-hidden /> Join
                 </Button>
               </div>
             ))}
@@ -186,3 +185,4 @@ export function InstitutionSection() {
     </div>
   );
 }
+
