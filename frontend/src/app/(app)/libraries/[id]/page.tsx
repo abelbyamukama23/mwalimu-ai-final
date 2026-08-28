@@ -1,19 +1,20 @@
 "use client";
 
 import {
-  ArrowLeft,
-  ArrowsClockwise,
-  Buildings,
-  CalendarBlank,
-  ClockCounterClockwise,
-  FileText,
-  FolderOpen,
-  Gear,
-  Key,
-  PlugsConnected,
-  Plus,
-  Trash,
-} from "@phosphor-icons/react";
+  ArrowLeft01Icon,
+  Building01Icon,
+  Calendar01Icon,
+  Clock01Icon,
+  Delete02Icon,
+  File01Icon,
+  FolderOpenIcon,
+  LockKeyIcon,
+  Plug01Icon,
+  PlusSignIcon,
+  RefreshIcon,
+  Settings01Icon,
+} from "hugeicons-react";
+
 
 
 import Link from "next/link";
@@ -191,13 +192,13 @@ export default function LibraryDetailPage() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
         <EmptyState
-          icon={FolderOpen}
+          icon={FolderOpenIcon}
           title="Library not found"
           body="This library does not exist or you do not have permission to view it."
           action={
             <Link href="/libraries">
               <Button variant="secondary">
-                <ArrowLeft size={16} aria-hidden /> Back to libraries
+                <ArrowLeft01Icon size={16} aria-hidden /> Back to libraries
               </Button>
             </Link>
           }
@@ -205,6 +206,7 @@ export default function LibraryDetailPage() {
       </div>
     );
   }
+
 
   return (
     <div className="h-full overflow-y-auto px-6 py-8 md:px-12">
@@ -214,7 +216,7 @@ export default function LibraryDetailPage() {
           href="/libraries"
           className="focus-ring inline-flex items-center gap-1.5 rounded text-12 font-medium text-ink-tertiary hover:text-ink"
         >
-          <ArrowLeft size={14} aria-hidden /> Back to libraries
+          <ArrowLeft01Icon size={14} aria-hidden /> Back to libraries
         </Link>
 
         {/* Library Header */}
@@ -240,17 +242,18 @@ export default function LibraryDetailPage() {
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-4 text-12 text-ink-tertiary">
               <span className="flex items-center gap-1 font-medium">
-                <Buildings size={14} weight="duotone" aria-hidden />
+                <Building01Icon size={14} aria-hidden />
                 {isPersonal
                   ? "Personal Knowledge Space"
                   : (library.institution?.name ?? "Institution")}
               </span>
               <span className="flex items-center gap-1">
-                <CalendarBlank size={14} weight="duotone" aria-hidden />
+                <Calendar01Icon size={14} aria-hidden />
                 Created {new Date(library.created_at).toLocaleDateString()}
               </span>
               <span className="font-mono text-11">slug: {library.slug}</span>
             </div>
+
 
           </div>
         </div>
@@ -260,20 +263,21 @@ export default function LibraryDetailPage() {
         <Tabs defaultValue="resources">
           <TabsList>
             <TabsTrigger value="resources">
-              <FileText size={16} weight="duotone" aria-hidden className="mr-1.5" />
+              <File01Icon size={16} aria-hidden className="mr-1.5" />
               Resources ({(resources ?? []).length})
             </TabsTrigger>
             <TabsTrigger value="connections">
-              <PlugsConnected size={16} weight="duotone" aria-hidden className="mr-1.5" />
+              <Plug01Icon size={16} aria-hidden className="mr-1.5" />
               Connections ({(connections ?? []).length})
             </TabsTrigger>
             {canManage && (
               <TabsTrigger value="settings">
-                <Gear size={16} weight="duotone" aria-hidden className="mr-1.5" />
+                <Settings01Icon size={16} aria-hidden className="mr-1.5" />
                 Settings
               </TabsTrigger>
             )}
           </TabsList>
+
 
 
           {/* Tab: Resources (GitHub-style folder explorer and resource cards) */}
@@ -374,7 +378,7 @@ export default function LibraryDetailPage() {
                               <span>Sync: {conn.sync_frequency}</span>
                               <span>•</span>
                               <span className="flex items-center gap-1">
-                                <Key size={12} aria-hidden />
+                                <LockKeyIcon size={12} aria-hidden />
                                 Credentials:{" "}
                                 {conn.has_credentials ? "Encrypted" : "None"}
                               </span>
@@ -403,9 +407,8 @@ export default function LibraryDetailPage() {
                                 }
                                 title="Sync external knowledge now"
                               >
-                                <ArrowsClockwise
+                                <RefreshIcon
                                   size={15}
-                                  weight="bold"
                                   className={
                                     conn.status === "syncing"
                                       ? "animate-spin"
@@ -427,7 +430,7 @@ export default function LibraryDetailPage() {
                               }
                               title="View synchronization job history"
                             >
-                              <ClockCounterClockwise size={15} weight="duotone" aria-hidden /> History
+                              <Clock01Icon size={15} aria-hidden /> History
                             </Button>
                             {canManage && (
                               <Button
@@ -438,10 +441,11 @@ export default function LibraryDetailPage() {
                                 className="text-danger hover:bg-danger/10"
                                 title="Delete connection"
                               >
-                                <Trash size={16} weight="bold" aria-hidden />
+                                <Delete02Icon size={16} aria-hidden />
                               </Button>
                             )}
                           </div>
+
 
                         </div>
                       ))}
@@ -547,8 +551,9 @@ export default function LibraryDetailPage() {
                     onClick={handleDeleteLibrary}
                     disabled={deleteMutation.isPending}
                   >
-                    <Trash size={14} weight="bold" aria-hidden /> Delete Library
+                    <Delete02Icon size={14} aria-hidden /> Delete Library
                   </Button>
+
 
                 </div>
               </div>

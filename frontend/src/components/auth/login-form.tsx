@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
+import { ViewIcon, ViewOffIcon } from "hugeicons-react";
 
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -97,8 +97,7 @@ export function LoginForm({
               onClick={() => setShow((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2"
             >
-              {show ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
-
+              {show ? <ViewOffIcon size={16} /> : <ViewIcon size={16} />}
             </IconButton>
           </div>
         </div>

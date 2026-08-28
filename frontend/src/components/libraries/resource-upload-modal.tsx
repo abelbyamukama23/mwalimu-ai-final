@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CloudArrowUp, FileText, SpinnerGap, X } from "@phosphor-icons/react";
+import { Cancel01Icon, CloudUploadIcon, File01Icon, Loading03Icon } from "hugeicons-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -97,7 +97,7 @@ export function ResourceUploadModal({
                 size="sm"
                 aria-label="Close upload modal"
               >
-                <X size={16} />
+                <Cancel01Icon size={16} />
               </IconButton>
             </DialogPrimitive.Close>
           </div>
@@ -128,7 +128,7 @@ export function ResourceUploadModal({
               {file ? (
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    <FileText size={20} weight="duotone" />
+                    <File01Icon size={20} />
                   </div>
                   <div className="text-left">
                     <p className="text-13 font-semibold text-ink truncate max-w-[260px]">
@@ -141,7 +141,7 @@ export function ResourceUploadModal({
                 </div>
               ) : (
                 <>
-                  <CloudArrowUp size={36} weight="duotone" className="text-ink-tertiary mb-2" />
+                  <CloudUploadIcon size={36} className="text-ink-tertiary mb-2" />
                   <p className="text-13 font-medium text-ink">
                     Drag and drop file here, or browse
                   </p>
@@ -205,7 +205,7 @@ export function ResourceUploadModal({
               >
                 {uploadMutation.isPending ? (
                   <>
-                    <SpinnerGap size={14} className="mr-1.5 animate-spin" />
+                    <Loading03Icon size={14} className="mr-1.5 animate-spin" />
                     Uploading to R2…
                   </>
                 ) : (

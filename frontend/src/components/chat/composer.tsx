@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Stop } from "@phosphor-icons/react";
+import { ArrowUp01Icon, StopIcon } from "hugeicons-react";
 import {
   forwardRef,
   useCallback,
@@ -117,7 +117,7 @@ export const Composer = forwardRef<
             aria-label="Stop generating"
             className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors duration-150 hover:bg-accent-hover"
           >
-            <Stop size={14} weight="fill" aria-hidden />
+            <StopIcon size={16} aria-hidden />
           </button>
         ) : (
           <button
@@ -131,7 +131,7 @@ export const Composer = forwardRef<
                 : "cursor-not-allowed bg-subtle text-ink-tertiary",
             )}
           >
-            <ArrowUp size={16} weight="bold" aria-hidden />
+            <ArrowUp01Icon size={18} aria-hidden />
           </button>
         )}
         </div>
@@ -139,3 +139,4 @@ export const Composer = forwardRef<
     </div>
   );
 });
+

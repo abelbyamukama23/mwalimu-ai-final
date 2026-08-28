@@ -3,17 +3,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
-  Books,
-  FolderSimple,
-  HardDrive,
-  MagnifyingGlass,
-  Sparkle,
-} from "@phosphor-icons/react";
+  ArrowRight01Icon,
+  Book02Icon,
+  HardDriveIcon,
+  Search01Icon,
+} from "hugeicons-react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useConnectors } from "@/lib/hooks/use-connectors";
 import { useLibraries } from "@/lib/hooks/use-libraries";
 import { useLibraryConnections } from "@/lib/hooks/use-connectors";
@@ -78,7 +74,7 @@ export default function ConnectionsPage() {
 
           {/* Search Input */}
           <div className="relative w-full sm:w-64">
-            <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-tertiary" />
+            <Search01Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-tertiary" />
             <Input
               type="search"
               placeholder="Search connections…"
@@ -109,10 +105,10 @@ export default function ConnectionsPage() {
               N
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted text-[#FF9900]" title="Amazon S3">
-              <HardDrive size={16} />
+              <HardDriveIcon size={16} />
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-surface-muted text-accent" title="Local Academic Storage">
-              <HardDrive size={16} />
+              <HardDriveIcon size={16} />
             </div>
           </div>
         </div>
@@ -124,7 +120,7 @@ export default function ConnectionsPage() {
           </div>
         ) : !libraries || libraries.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-8 text-center">
-            <Books className="mx-auto h-10 w-10 text-ink-tertiary" />
+            <Book02Icon className="mx-auto h-10 w-10 text-ink-tertiary" />
             <h3 className="mt-3 text-15 font-semibold text-ink">
               Create a study library first
             </h3>
@@ -160,19 +156,18 @@ export default function ConnectionsPage() {
                           : "bg-surface border border-border text-ink-secondary hover:bg-subtle hover:text-ink"
                       }`}
                     >
-                      <Books size={14} weight="duotone" aria-hidden />
+                      <Book02Icon size={14} aria-hidden />
                       {lib.name}
                     </button>
                   );
                 })}
               </div>
 
-
               <Link
                 href={`/libraries/${currentLibraryId}`}
                 className="focus-ring inline-flex items-center gap-1 text-12 font-medium text-accent hover:underline"
               >
-                View library files <ArrowRight size={12} />
+                View library files <ArrowRight01Icon size={12} />
               </Link>
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { UserCircle } from "@phosphor-icons/react";
+import { UserCircleIcon } from "hugeicons-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,6 @@ import { useCurrentUser } from "@/lib/hooks/use-current-user";
 import { useUpdateUserProfile, useUserProfile } from "@/lib/hooks/use-profile";
 import type { UserProfile } from "@/lib/settings/types";
 import { SettingRow } from "../primitives/setting-row";
-
 
 function ProfileForm({ profile }: { profile?: UserProfile }) {
   const updateProfile = useUpdateUserProfile();
@@ -109,7 +108,7 @@ export function GeneralSection() {
       <div className="rounded-lg border border-border bg-surface p-6">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-sunken text-ink-tertiary border border-border">
-            <UserCircle size={32} />
+            <UserCircleIcon size={32} />
           </div>
           <div>
             <p className="text-14 font-semibold text-ink">

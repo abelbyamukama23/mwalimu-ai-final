@@ -1,13 +1,13 @@
 "use client";
 
 import {
-  ArrowDown,
-  ArrowUp,
-  MagnifyingGlass,
-  MapPin,
-  Plus,
-  Trash,
-} from "@phosphor-icons/react";
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Delete02Icon,
+  Location01Icon,
+  PlusSignIcon,
+  Search01Icon,
+} from "hugeicons-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -88,7 +88,7 @@ export function FamiliarRegionsSection() {
           Add a familiar county, district, or town
         </label>
         <div className="relative">
-          <MagnifyingGlass
+          <Search01Icon
             size={16}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary"
           />
@@ -134,7 +134,7 @@ export function FamiliarRegionsSection() {
                         disabled={addMutation.isPending}
                         onClick={() => handleAdd(unit)}
                       >
-                        <Plus size={14} weight="bold" /> Add
+                        <PlusSignIcon size={14} /> Add
                       </Button>
                     )}
                   </div>
@@ -172,7 +172,7 @@ export function FamiliarRegionsSection() {
                   </span>
                   <div>
                     <div className="flex items-center gap-2">
-                      <MapPin size={16} weight="duotone" className="text-accent" />
+                      <Location01Icon size={16} className="text-accent" />
                       <span className="text-14 font-medium text-ink">
                         {item.geographic_unit.name}
                       </span>
@@ -191,7 +191,7 @@ export function FamiliarRegionsSection() {
                     aria-label="Move region up"
                     className="p-1 rounded text-ink-tertiary hover:text-ink disabled:opacity-30"
                   >
-                    <ArrowUp size={14} weight="bold" />
+                    <ArrowUp01Icon size={14} />
                   </button>
                   <button
                     type="button"
@@ -200,7 +200,7 @@ export function FamiliarRegionsSection() {
                     aria-label="Move region down"
                     className="p-1 rounded text-ink-tertiary hover:text-ink disabled:opacity-30"
                   >
-                    <ArrowDown size={14} weight="bold" />
+                    <ArrowDown01Icon size={14} />
                   </button>
                   <button
                     type="button"
@@ -209,7 +209,7 @@ export function FamiliarRegionsSection() {
                     aria-label="Remove familiar region"
                     className="p-1 ml-2 rounded text-danger/70 hover:text-danger hover:bg-danger-surface transition-colors"
                   >
-                    <Trash size={15} weight="bold" />
+                    <Delete02Icon size={15} />
                   </button>
                 </div>
               </div>
@@ -220,5 +220,3 @@ export function FamiliarRegionsSection() {
     </div>
   );
 }
-
-

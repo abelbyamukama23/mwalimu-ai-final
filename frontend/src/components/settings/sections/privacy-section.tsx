@@ -1,6 +1,6 @@
 "use client";
 
-import { DownloadSimple } from "@phosphor-icons/react";
+import { Download01Icon } from "hugeicons-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -89,7 +89,7 @@ export function PrivacySection() {
             disabled={exporting}
             onClick={handleExportData}
           >
-            <DownloadSimple size={15} weight="bold" className="mr-1.5" />
+            <Download01Icon size={15} className="mr-1.5" />
             {exporting ? "Preparing…" : "Export archive"}
           </Button>
         </SettingRow>
@@ -97,4 +97,3 @@ export function PrivacySection() {
     </div>
   );
 }
-

@@ -2,17 +2,17 @@
 
 import { useMemo, useState } from "react";
 import {
-  ArrowsClockwise,
-  CaretRight,
-  FileCode,
-  FileDoc,
-  FilePdf,
-  FileText,
-  Folder,
-  FolderOpen,
-  MagnifyingGlass,
-  SpinnerGap,
-} from "@phosphor-icons/react";
+  ArrowRight01Icon,
+  CodeIcon,
+  Doc01Icon,
+  File01Icon,
+  Folder01Icon,
+  FolderOpenIcon,
+  Loading03Icon,
+  Pdf01Icon,
+  RefreshIcon,
+  Search01Icon,
+} from "hugeicons-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,12 +45,12 @@ function formatBytes(bytes?: number): string {
 
 function getFileIcon(item: RemoteFileItem) {
   if (item.type === "folder") {
-    return <Folder size={18} weight="duotone" className="text-brand shrink-0" />;
+    return <Folder01Icon size={18} className="text-brand shrink-0" />;
   }
   const mime = item.mime_type || "";
   const name = item.name.toLowerCase();
   if (mime.includes("pdf") || name.endsWith(".pdf")) {
-    return <FilePdf size={18} weight="duotone" className="text-danger shrink-0" />;
+    return <Pdf01Icon size={18} className="text-danger shrink-0" />;
   }
   if (
     mime.includes("document") ||
@@ -58,14 +58,13 @@ function getFileIcon(item: RemoteFileItem) {
     name.endsWith(".docx") ||
     name.endsWith(".doc")
   ) {
-    return <FileDoc size={18} weight="duotone" className="text-info shrink-0" />;
+    return <Doc01Icon size={18} className="text-info shrink-0" />;
   }
   if (name.endsWith(".py") || name.endsWith(".ts") || name.endsWith(".js") || name.endsWith(".json")) {
-    return <FileCode size={18} weight="duotone" className="text-warning shrink-0" />;
+    return <CodeIcon size={18} className="text-warning shrink-0" />;
   }
-  return <FileText size={18} weight="duotone" className="text-ink-tertiary shrink-0" />;
+  return <File01Icon size={18} className="text-ink-tertiary shrink-0" />;
 }
-
 
 export function RemoteFilePickerDialog({
   libraryId,
@@ -156,7 +155,7 @@ export function RemoteFilePickerDialog({
         {/* Search bar & Refresh */}
         <div className="flex items-center gap-2 border-b border-border pb-3">
           <div className="relative flex-1">
-            <MagnifyingGlass size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary" />
+            <Search01Icon size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -170,7 +169,7 @@ export function RemoteFilePickerDialog({
             onClick={() => void refetch()}
             className="h-9 gap-1.5 text-12 text-ink-secondary"
           >
-            <ArrowsClockwise size={14} weight="bold" />
+            <RefreshIcon size={14} />
             Refresh
           </Button>
         </div>
@@ -180,7 +179,7 @@ export function RemoteFilePickerDialog({
           <div className="my-2 flex items-center gap-1 text-11 text-ink-secondary">
             {breadcrumbs.map((crumb, idx) => (
               <div key={crumb.id} className="flex items-center gap-1">
-                {idx > 0 && <CaretRight size={12} weight="bold" className="text-ink-tertiary" />}
+                {idx > 0 && <ArrowRight01Icon size={12} className="text-ink-tertiary" />}
                 <button
                   type="button"
                   onClick={() => navigateToBreadcrumb(idx)}
@@ -197,7 +196,7 @@ export function RemoteFilePickerDialog({
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading ? (
             <div className="flex h-48 flex-col items-center justify-center gap-2 text-ink-tertiary">
-              <SpinnerGap size={22} className="animate-spin text-brand" />
+              <Loading03Icon size={22} className="animate-spin text-brand" />
               <span className="text-12">Loading remote files…</span>
             </div>
           ) : isError || data?.error ? (
@@ -217,12 +216,11 @@ export function RemoteFilePickerDialog({
             </div>
           ) : items.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center gap-1.5 text-center text-ink-tertiary">
-              <FolderOpen size={36} weight="duotone" className="text-ink-tertiary" />
+              <FolderOpenIcon size={36} className="text-ink-tertiary" />
               <p className="text-13 font-medium text-ink">No files found</p>
               <p className="text-11">This folder appears to be empty or has no matching documents.</p>
             </div>
           ) : (
-
             <div className="divide-y divide-border/50">
               {items.map((item) => {
                 const isSelected = selectedIds.has(item.id);
@@ -309,11 +307,10 @@ export function RemoteFilePickerDialog({
             >
               {syncMutation.isPending ? (
                 <>
-                  <SpinnerGap size={14} className="animate-spin" />
+                  <Loading03Icon size={14} className="animate-spin" />
                   Syncing…
                 </>
               ) : (
-
                 "Sync Now"
               )}
             </Button>

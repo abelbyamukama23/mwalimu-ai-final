@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy } from "@phosphor-icons/react";
+import { Copy01Icon, Tick01Icon } from "hugeicons-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -64,11 +64,10 @@ export function CopyButton({
       )}
     >
       {copied ? (
-        <Check size={14} weight="bold" className="text-success-fg" />
+        <Tick01Icon size={14} className="text-success-fg" />
       ) : (
-        <Copy size={14} weight="duotone" />
+        <Copy01Icon size={14} />
       )}
     </button>
   );
 }
-

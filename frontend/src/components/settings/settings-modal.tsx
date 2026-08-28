@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { MagnifyingGlass, X } from "@phosphor-icons/react";
+import { Cancel01Icon, Search01Icon } from "hugeicons-react";
 import {
   createContext,
   useCallback,
@@ -128,7 +128,7 @@ function SettingsModal({
             : "text-ink-secondary hover:bg-surface hover:text-ink",
         )}
       >
-        <Icon size={15} aria-hidden className="shrink-0" />
+        <Icon size={16} aria-hidden className="shrink-0" />
         <span className="flex-1 truncate text-left">{s.label}</span>
       </button>
     );
@@ -152,7 +152,7 @@ function SettingsModal({
             <span className="text-15 font-semibold text-ink">Settings</span>
             <DialogPrimitive.Close asChild>
               <IconButton aria-label="Close settings" size="sm">
-                <X size={16} />
+                <Cancel01Icon size={16} />
               </IconButton>
             </DialogPrimitive.Close>
           </div>
@@ -184,17 +184,16 @@ function SettingsModal({
                 <span className="text-15 font-semibold text-ink">Settings</span>
                 <DialogPrimitive.Close asChild>
                   <IconButton aria-label="Close settings" size="sm">
-                    <X size={16} />
+                    <Cancel01Icon size={16} />
                   </IconButton>
                 </DialogPrimitive.Close>
               </div>
               <div className="relative">
-                <MagnifyingGlass
+                <Search01Icon
                   size={14}
                   aria-hidden
                   className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-tertiary"
                 />
-
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}

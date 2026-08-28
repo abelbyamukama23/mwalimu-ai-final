@@ -1,6 +1,6 @@
 "use client";
 
-import { List, SidebarSimple } from "@phosphor-icons/react";
+import { Menu01Icon, SidebarLeftIcon } from "hugeicons-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { SidebarContent } from "@/components/layout/sidebar";
@@ -46,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 onClick={() => setCollapsed(false)}
                 className="text-ink-secondary hover:text-ink"
               >
-                <SidebarSimple size={18} weight="duotone" />
+                <SidebarLeftIcon size={18} />
               </IconButton>
             ) : (
               <>
@@ -63,12 +63,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onClick={() => setCollapsed(true)}
                   className="text-ink-secondary hover:text-ink"
                 >
-                  <SidebarSimple size={18} weight="duotone" />
+                  <SidebarLeftIcon size={18} />
                 </IconButton>
               </>
             )}
           </div>
-
 
           {!collapsed && (
             <div className="min-h-0 flex-1">
@@ -84,9 +83,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         onClick={() => setNavOpen(true)}
         className="fixed left-3 top-3 z-30 rounded-md border border-border bg-surface/90 shadow-overlay lg:hidden"
       >
-        <List size={18} weight="bold" />
+        <Menu01Icon size={18} />
       </IconButton>
-
 
       {/* Mobile navigation drawer */}
       <Drawer open={navOpen} onOpenChange={setNavOpen}>

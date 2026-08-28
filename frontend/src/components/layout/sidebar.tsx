@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  Books,
-  DotsThree,
-  MagnifyingGlass,
-  NotePencil,
-  PlugsConnected,
-} from "@phosphor-icons/react";
+  Book02Icon,
+  Edit02Icon,
+  MoreHorizontalIcon,
+  Plug01Icon,
+  Search01Icon,
+} from "hugeicons-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -26,7 +26,6 @@ import {
 } from "@/lib/chat/use-chat";
 import { useToast } from "@/components/ui/toast";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +45,7 @@ function NavItem({
   trailing,
 }: {
   href: string;
-  icon: React.ComponentType<{ size?: number; weight?: "regular" | "bold" | "duotone" | "fill" | "light" | "thin"; className?: string; "aria-hidden"?: boolean }>;
+  icon: React.ComponentType<{ size?: number | string; className?: string; "aria-hidden"?: boolean }>;
   label: string;
   active?: boolean;
   trailing?: React.ReactNode;
@@ -62,13 +61,12 @@ function NavItem({
           : "text-ink-secondary hover:bg-subtle hover:text-ink",
       )}
     >
-      <Icon size={18} weight={active ? "duotone" : "regular"} aria-hidden className="shrink-0" />
+      <Icon size={18} aria-hidden className="shrink-0" />
       <span className="flex-1 truncate">{label}</span>
       {trailing}
     </Link>
   );
 }
-
 
 function SessionRow({ id, title, active }: { id: string; title: string; active?: boolean }) {
   const router = useRouter();
@@ -110,8 +108,7 @@ function SessionRow({ id, title, active }: { id: string; title: string; active?:
               size="sm"
               className="mr-1 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
             >
-              <DotsThree size={18} weight="bold" />
-
+              <MoreHorizontalIcon size={18} />
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="right">
@@ -217,7 +214,7 @@ export function SidebarContent() {
         href="/chat/new"
         className="focus-ring mb-2 flex w-full items-center gap-2.5 rounded-sm border border-border bg-surface px-3 py-2 text-14 font-medium text-ink transition-colors duration-150 hover:border-border-strong hover:bg-subtle"
       >
-        <NotePencil size={18} weight="duotone" aria-hidden className="shrink-0 text-accent" />
+        <Edit02Icon size={18} aria-hidden className="shrink-0 text-accent" />
         New chat
       </Link>
 
@@ -226,26 +223,24 @@ export function SidebarContent() {
         onClick={() => setSearchOpen(true)}
         className="focus-ring flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-14 text-ink-secondary transition-colors duration-150 hover:bg-subtle hover:text-ink"
       >
-        <MagnifyingGlass size={18} aria-hidden className="shrink-0" />
+        <Search01Icon size={18} aria-hidden className="shrink-0" />
         Search chats
       </button>
 
       <nav aria-label="Primary" className="space-y-0.5">
         <NavItem
           href="/libraries"
-          icon={Books}
+          icon={Book02Icon}
           label="Libraries"
           active={pathname.startsWith("/libraries")}
         />
         <NavItem
           href="/connections"
-          icon={PlugsConnected}
+          icon={Plug01Icon}
           label="Connections"
           active={pathname.startsWith("/connections") || pathname.startsWith("/connectors")}
         />
       </nav>
-
-
 
       <p className="mb-1 mt-5 px-3 text-11 font-medium tracking-wide text-ink-tertiary">
         RECENT

@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Compass, Lightbulb } from "@phosphor-icons/react";
+import { BookOpen01Icon, BulbIcon, CompassIcon } from "hugeicons-react";
 import { useToast } from "@/components/ui/toast";
 
 import {
@@ -17,19 +17,19 @@ const STYLE_OPTIONS = [
     value: "intuitive" as PedagogicalStyle,
     label: "Intuitive & Analogies",
     description: "Uses real-world East African context, farming analogies, and intuitive mental models.",
-    icon: Lightbulb,
+    icon: BulbIcon,
   },
   {
     value: "formal" as PedagogicalStyle,
     label: "Academic & Formal",
     description: "Strict curriculum terminology, formal definitions, and rigorous structure.",
-    icon: BookOpen,
+    icon: BookOpen01Icon,
   },
   {
     value: "socratic" as PedagogicalStyle,
     label: "Socratic & Guiding",
     description: "Guides step-by-step with targeted questions rather than giving immediate answers.",
-    icon: Compass,
+    icon: CompassIcon,
   },
 ];
 

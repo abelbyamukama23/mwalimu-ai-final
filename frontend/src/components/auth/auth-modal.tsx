@@ -1,9 +1,8 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X } from "@phosphor-icons/react";
+import { Cancel01Icon } from "hugeicons-react";
 import {
-
   createContext,
   useCallback,
   useContext,
@@ -67,7 +66,7 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
                 size="sm"
                 className="absolute right-3.5 top-3.5 z-10"
               >
-                <X size={16} />
+                <Cancel01Icon size={16} />
               </IconButton>
             </DialogPrimitive.Close>
             <AuthPanel

@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkle } from "@phosphor-icons/react";
+import { SparklesIcon } from "hugeicons-react";
 import type { Citation } from "@/lib/chat/chat-api";
 import { cn } from "@/lib/utils";
 
@@ -34,9 +34,8 @@ export function GroundingIndicator({ citations, className }: GroundingIndicatorP
         className,
       )}
     >
-      <Sparkle size={13} weight="fill" className="text-accent shrink-0" aria-hidden="true" />
+      <SparklesIcon size={14} className="text-accent shrink-0" aria-hidden="true" />
       <span>{label}</span>
     </div>
   );
 }
-

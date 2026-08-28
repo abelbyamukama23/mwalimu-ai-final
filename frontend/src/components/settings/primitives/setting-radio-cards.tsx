@@ -1,15 +1,15 @@
 "use client";
 
-import { Check, type Icon } from "@phosphor-icons/react";
+import { Tick01Icon } from "hugeicons-react";
+import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
 
 export type RadioCardOption<T extends string> = {
   value: T;
   label: string;
   description?: string;
-  icon?: Icon;
+  icon?: ComponentType<{ size?: number | string; className?: string; "aria-hidden"?: boolean }>;
 };
-
 
 export function SettingRadioCards<T extends string>({
   options,
@@ -66,8 +66,8 @@ export function SettingRadioCards<T extends string>({
                   />
                 )}
                 {selected && (
-                  <div className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-ink">
-                    <Check size={10} strokeWidth={3} />
+                  <div className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-white">
+                    <Tick01Icon size={10} />
                   </div>
                 )}
               </div>

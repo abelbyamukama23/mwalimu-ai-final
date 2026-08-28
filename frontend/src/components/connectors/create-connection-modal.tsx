@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowSquareOut, Lock } from "@phosphor-icons/react";
-
+import { LockKeyIcon, SquareArrowUpRightIcon } from "hugeicons-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +42,6 @@ export function CreateConnectionModal({
   >({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isAuthorizingOAuth, setIsAuthorizingOAuth] = useState(false);
-
 
   const activeConnectors = useMemo(() => {
     return (connectors ?? []).filter((c) => c.is_active);
@@ -109,7 +107,6 @@ export function CreateConnectionModal({
       setIsAuthorizingOAuth(false);
     }
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,10 +280,9 @@ export function CreateConnectionModal({
                     onClick={handleOAuthAuthorize}
                     className="inline-flex items-center gap-1.5 border-brand/30 text-brand hover:bg-brand-surface"
                   >
-                    <ArrowSquareOut size={15} weight="bold" />
+                    <SquareArrowUpRightIcon size={15} />
                     {isAuthorizingOAuth ? "Redirecting…" : `Authorize with ${selectedConnector.name}`}
                   </Button>
-
                 </div>
               )}
 
@@ -297,7 +293,6 @@ export function CreateConnectionModal({
                 isCredentialSection
               />
             </div>
-
 
             <div className="mt-6 flex justify-end gap-2.5 pt-2">
               <Button

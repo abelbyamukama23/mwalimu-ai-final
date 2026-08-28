@@ -1,5 +1,4 @@
-import { Info } from "@phosphor-icons/react/dist/ssr";
-
+import { InformationCircleIcon } from "hugeicons-react";
 
 const STATS = ["Active users", "Institution libraries", "Pending access requests", "Queries this month"] as const;
 
@@ -30,7 +29,7 @@ export default function ConsoleDashboardPage() {
       </div>
 
       <div className="flex max-w-3xl items-start gap-3 rounded-md border border-info-bg bg-info-bg/40 px-4 py-3.5">
-        <Info size={16} aria-hidden className="mt-0.5 shrink-0 text-info-fg" />
+        <InformationCircleIcon size={16} aria-hidden className="mt-0.5 shrink-0 text-info-fg" />
         <p className="text-13 leading-relaxed text-ink-secondary">
           Usage metrics require analytics endpoints the Platform API does not expose yet.
           Users, Libraries, Resources, and Context management land in Phase 5 against the

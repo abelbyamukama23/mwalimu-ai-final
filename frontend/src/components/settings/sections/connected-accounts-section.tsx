@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Globe } from "@phosphor-icons/react";
+import { CheckmarkCircle01Icon, Globe02Icon } from "hugeicons-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -54,13 +54,13 @@ export function ConnectedAccountsSection() {
             >
               <div className="max-w-md space-y-1">
                 <div className="flex items-center gap-2">
-                  <Globe size={18} weight="duotone" className="text-ink-tertiary" />
+                  <Globe02Icon size={18} className="text-ink-tertiary" />
                   <span className="text-14 font-medium text-ink">
                     {prov.name}
                   </span>
                   {isConnected && (
                     <Badge tone="success">
-                      <CheckCircle size={12} weight="fill" className="mr-1 inline" />
+                      <CheckmarkCircle01Icon size={12} className="mr-1 inline" />
                       Connected
                     </Badge>
                   )}

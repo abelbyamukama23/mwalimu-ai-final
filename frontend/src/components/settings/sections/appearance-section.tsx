@@ -1,6 +1,6 @@
 "use client";
 
-import { Desktop, Moon, Sun } from "@phosphor-icons/react";
+import { ComputerIcon, Moon01Icon, Sun01Icon } from "hugeicons-react";
 import { useToast } from "@/components/ui/toast";
 import { useDevicePreferences } from "@/lib/settings/local-store";
 import type { DisplayDensity, ThemeMode } from "@/lib/settings/types";
@@ -13,22 +13,21 @@ const THEME_OPTIONS = [
     value: "system" as ThemeMode,
     label: "System",
     description: "Matches your operating system's visual appearance.",
-    icon: Desktop,
+    icon: ComputerIcon,
   },
   {
     value: "light" as ThemeMode,
     label: "Light",
     description: "Crisp, daylight optimized palette.",
-    icon: Sun,
+    icon: Sun01Icon,
   },
   {
     value: "dark" as ThemeMode,
     label: "Dark",
     description: "High contrast dark palette for low-light environments.",
-    icon: Moon,
+    icon: Moon01Icon,
   },
 ];
-
 
 const DENSITY_OPTIONS = [
   { value: "comfortable" as DisplayDensity, label: "Comfortable (Standard)" },

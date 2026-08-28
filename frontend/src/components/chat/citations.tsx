@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import {
-  BookOpen,
-  Books,
-  CaretDown,
-  CaretUp,
-  FileText,
-} from "@phosphor-icons/react";
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Book02Icon,
+  BookOpen01Icon,
+  File01Icon,
+} from "hugeicons-react";
 import type { Citation } from "@/lib/chat/chat-api";
 import { cn } from "@/lib/utils";
 
@@ -69,7 +69,7 @@ function CitationItem({ citation }: { citation: Citation }) {
           open && "border-accent/40 bg-accent/5 text-ink",
         )}
       >
-        <BookOpen size={14} weight="duotone" className="text-accent shrink-0" aria-hidden="true" />
+        <BookOpen01Icon size={14} className="text-accent shrink-0" aria-hidden="true" />
         <span className="truncate max-w-[200px] sm:max-w-[280px]">
           {title}
         </span>
@@ -79,9 +79,9 @@ function CitationItem({ citation }: { citation: Citation }) {
           </span>
         )}
         {open ? (
-          <CaretUp size={12} weight="bold" className="text-ink-muted shrink-0" aria-hidden="true" />
+          <ArrowUp01Icon size={12} className="text-ink-muted shrink-0" aria-hidden="true" />
         ) : (
-          <CaretDown size={12} weight="bold" className="text-ink-muted shrink-0" aria-hidden="true" />
+          <ArrowDown01Icon size={12} className="text-ink-muted shrink-0" aria-hidden="true" />
         )}
       </button>
 
@@ -92,7 +92,7 @@ function CitationItem({ citation }: { citation: Citation }) {
           className="mt-1.5 w-full max-w-[340px] rounded-lg border border-border bg-surface p-3 text-12 text-ink shadow-sm"
         >
           <div className="flex items-start gap-2 mb-2">
-            <FileText size={16} weight="duotone" className="text-accent shrink-0 mt-0.5" aria-hidden="true" />
+            <File01Icon size={16} className="text-accent shrink-0 mt-0.5" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-13 truncate">{title}</div>
               {location && (
@@ -102,7 +102,7 @@ function CitationItem({ citation }: { citation: Citation }) {
           </div>
 
           <div className="flex items-center gap-1.5 pt-2 border-t border-border/60 text-11 text-ink-secondary">
-            <Books size={14} weight="duotone" className="text-ink-muted shrink-0" aria-hidden="true" />
+            <Book02Icon size={14} className="text-ink-muted shrink-0" aria-hidden="true" />
             <span className="truncate">{libraryName}</span>
           </div>
         </div>
@@ -110,7 +110,6 @@ function CitationItem({ citation }: { citation: Citation }) {
     </div>
   );
 }
-
 
 /**
  * Compact provenance list rendered beneath assistant responses.

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ChatCircleText } from "@phosphor-icons/react";
+import { BubbleChatIcon } from "hugeicons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import { CitationChips } from "@/components/chat/citations";
 import { Composer, type ComposerHandle } from "@/components/chat/composer";
 import { GroundingIndicator } from "@/components/chat/grounding-indicator";
@@ -171,8 +172,9 @@ export function ChatView({ sessionId }: { sessionId: string }) {
     return (
       <div className="flex h-full items-center justify-center px-6">
         <EmptyState
-          icon={ChatCircleText}
+          icon={BubbleChatIcon}
           title="Conversation not found"
+
 
           body="This conversation doesn’t exist or was cleared. Start a new one to continue."
           action={

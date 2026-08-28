@@ -1,23 +1,22 @@
 "use client";
 
 import {
-  ArrowLeft,
-  Books,
-  Buildings,
-  ChartBar,
-  FileText,
-  Gear,
-  GridFour,
-  List,
-  Lock,
-  MapPin,
-  PlugsConnected,
-  Users,
-  type Icon,
-} from "@phosphor-icons/react";
+  ArrowLeft01Icon,
+  Book02Icon,
+  Building01Icon,
+  ChartBarLineIcon,
+  File01Icon,
+  Grid02Icon,
+  Location01Icon,
+  LockKeyIcon,
+  Menu01Icon,
+  Plug01Icon,
+  Settings01Icon,
+  UserGroupIcon,
+} from "hugeicons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, type ComponentType, type ReactNode } from "react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
@@ -28,20 +27,20 @@ const INSTITUTION_NAME = "Mountains of the Moon University";
 type ConsoleNavItem = {
   id: string;
   label: string;
-  icon: Icon;
+  icon: ComponentType<{ size?: number | string; className?: string; "aria-hidden"?: boolean }>;
   href?: string; // absent = not yet implemented (disabled, "Soon")
 };
 
 const CONSOLE_NAV: ConsoleNavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: GridFour, href: "/console/dashboard" },
-  { id: "users", label: "Users", icon: Users },
-  { id: "libraries", label: "Libraries", icon: Books },
-  { id: "access", label: "Access", icon: Lock },
-  { id: "resources", label: "Resources", icon: FileText },
-  { id: "context", label: "Context", icon: MapPin },
-  { id: "connections", label: "Connections", icon: PlugsConnected },
-  { id: "analytics", label: "Analytics", icon: ChartBar },
-  { id: "settings", label: "Settings", icon: Gear },
+  { id: "dashboard", label: "Dashboard", icon: Grid02Icon, href: "/console/dashboard" },
+  { id: "users", label: "Users", icon: UserGroupIcon },
+  { id: "libraries", label: "Libraries", icon: Book02Icon },
+  { id: "access", label: "Access", icon: LockKeyIcon },
+  { id: "resources", label: "Resources", icon: File01Icon },
+  { id: "context", label: "Context", icon: Location01Icon },
+  { id: "connections", label: "Connections", icon: Plug01Icon },
+  { id: "analytics", label: "Analytics", icon: ChartBarLineIcon },
+  { id: "settings", label: "Settings", icon: Settings01Icon },
 ];
 
 function ConsoleNavContent() {
@@ -54,7 +53,7 @@ function ConsoleNavContent() {
           aria-hidden
           className="flex h-7 w-7 items-center justify-center rounded-sm bg-accent"
         >
-          <Buildings size={16} weight="duotone" className="text-white" />
+          <Building01Icon size={16} className="text-white" />
         </span>
 
         <span className="text-15 font-semibold text-white">Institution Console</span>
@@ -103,7 +102,7 @@ function ConsoleNavContent() {
         href="/chat/new"
         className="focus-ring mt-4 flex items-center gap-2 rounded-sm px-3 py-2 text-12 text-console-muted transition-colors duration-150 hover:bg-console-hover/70 hover:text-console-fg"
       >
-        <ArrowLeft size={14} aria-hidden /> Exit to user app
+        <ArrowLeft01Icon size={14} aria-hidden /> Exit to user app
       </Link>
     </div>
   );
@@ -124,7 +123,7 @@ export function InstitutionShell({ children }: { children: ReactNode }) {
 
       <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-canvas px-3 lg:hidden">
         <IconButton aria-label="Open console navigation" onClick={() => setNavOpen(true)}>
-          <List size={18} weight="bold" />
+          <Menu01Icon size={18} />
         </IconButton>
 
         <span className="text-15 font-semibold text-ink">Institution Console</span>

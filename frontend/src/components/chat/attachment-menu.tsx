@@ -1,6 +1,6 @@
 "use client";
 
-import { Books, FileText, Image, Plus } from "@phosphor-icons/react";
+import { Book02Icon, File01Icon, Image01Icon, PlusSignIcon } from "hugeicons-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { IconButton } from "@/components/ui/icon-button";
@@ -8,11 +8,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 
 const ATTACHMENTS = [
-  { icon: FileText, label: "Upload a document" },
-  { icon: Image, label: "Add an image" },
-  { icon: Books, label: "Add a learning resource" },
+  { icon: File01Icon, label: "Upload a document" },
+  { icon: Image01Icon, label: "Add an image" },
+  { icon: Book02Icon, label: "Add a learning resource" },
 ] as const;
-
 
 /**
  * Composer "+"/add control. Attachment ingestion is not yet implemented on the
@@ -32,7 +31,7 @@ export function AttachmentMenu() {
           aria-label="Add attachment"
           className="text-ink-secondary hover:text-ink"
         >
-          <Plus size={18} />
+          <PlusSignIcon size={18} />
         </IconButton>
       </PopoverTrigger>
       <PopoverContent align="start" side="top" className="w-64">
@@ -46,7 +45,7 @@ export function AttachmentMenu() {
               disabled
               className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-sm px-2 py-2 text-left text-13 text-ink-tertiary opacity-60"
             >
-              <item.icon size={15} aria-hidden className="shrink-0" />
+              <item.icon size={16} aria-hidden className="shrink-0" />
               <span className="flex-1">{item.label}</span>
               <Badge tone="warning">Soon</Badge>
             </button>

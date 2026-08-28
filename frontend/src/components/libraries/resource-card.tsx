@@ -1,15 +1,14 @@
 "use client";
 
 import {
-  DownloadSimple,
-  SpinnerGap,
-  Trash,
-} from "@phosphor-icons/react";
+  Delete02Icon,
+  Download01Icon,
+  Loading03Icon,
+} from "hugeicons-react";
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { IconButton } from "@/components/ui/icon-button";
 import { useToast } from "@/components/ui/toast";
 import {
   useDeleteLibraryResource,
@@ -94,7 +93,7 @@ export function ResourceCard({
               className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-tertiary transition-colors hover:bg-surface-hover hover:text-ink focus-ring"
               title="Download original file"
             >
-              <DownloadSimple size={16} weight="bold" aria-hidden />
+              <Download01Icon size={16} aria-hidden />
             </a>
 
             {canManage && (
@@ -104,7 +103,7 @@ export function ResourceCard({
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-tertiary transition-colors hover:bg-danger-subtle hover:text-danger focus-ring"
                 title="Delete resource"
               >
-                <Trash size={16} weight="bold" aria-hidden />
+                <Delete02Icon size={16} aria-hidden />
               </button>
             )}
           </div>
@@ -136,7 +135,7 @@ export function ResourceCard({
             </Badge>
           ) : isProcessing ? (
             <Badge tone="accent">
-              <SpinnerGap size={12} className="mr-1 animate-spin inline" />
+              <Loading03Icon size={12} className="mr-1 animate-spin inline" />
               Chunking…
             </Badge>
           ) : isFailed ? (
@@ -145,7 +144,6 @@ export function ResourceCard({
             <Badge tone="neutral">Queued</Badge>
           )}
         </div>
-
 
         <span>
           {new Date(resource.created_at).toLocaleDateString(undefined, {

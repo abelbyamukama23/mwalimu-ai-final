@@ -1,6 +1,6 @@
 "use client";
 
-import { CaretDown, Check, MapPin, Plus } from "@phosphor-icons/react";
+import { ArrowDown01Icon, Location01Icon, PlusSignIcon, Tick01Icon } from "hugeicons-react";
 import { useState } from "react";
 import { useSettingsModal } from "@/components/settings/settings-modal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -59,7 +59,7 @@ export function KnowledgeScopePopover({
           aria-label={`Knowledge scope: ${active.label}. Change knowledge and context.`}
         >
           Knowledge: {active.label}
-          <CaretDown size={12} weight="bold" aria-hidden />
+          <ArrowDown01Icon size={12} aria-hidden />
         </button>
       </PopoverTrigger>
 
@@ -86,7 +86,7 @@ export function KnowledgeScopePopover({
                   scope === s.id ? "border-accent" : "border-border-strong",
                 )}
               >
-                {scope === s.id && <Check size={10} className="text-accent" strokeWidth={3} />}
+                {scope === s.id && <Tick01Icon size={10} className="text-accent" />}
               </span>
               <span>
                 <span className="block text-13 font-medium text-ink">{s.label}</span>
@@ -101,7 +101,7 @@ export function KnowledgeScopePopover({
           disabled
           className="mt-1 flex w-full cursor-not-allowed items-center gap-1.5 rounded-sm px-2 py-2 text-13 font-medium text-ink-tertiary opacity-60"
         >
-          <Plus size={13} aria-hidden /> Select libraries… (coming soon)
+          <PlusSignIcon size={14} aria-hidden /> Select libraries… (coming soon)
         </button>
 
         <Separator className="my-2" />
@@ -110,7 +110,7 @@ export function KnowledgeScopePopover({
           FAMILIAR CONTEXT
         </p>
         <p className="flex items-start gap-1.5 px-1 text-12 leading-relaxed text-ink-secondary">
-          <MapPin size={13} aria-hidden className="mt-0.5 shrink-0 text-terracotta" />
+          <Location01Icon size={14} aria-hidden className="mt-0.5 shrink-0 text-terracotta" />
           Examples are grounded in your familiar regions first.
         </p>
         <button

@@ -1,7 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { X } from "@phosphor-icons/react";
+import { Cancel01Icon } from "hugeicons-react";
 import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -58,16 +58,17 @@ export function DialogHeader({
       {onClose ? (
         <DialogPrimitive.Close asChild>
           <IconButton aria-label="Close dialog" size="sm" onClick={onClose}>
-            <X size={16} />
+            <Cancel01Icon size={16} />
           </IconButton>
         </DialogPrimitive.Close>
       ) : (
         <DialogPrimitive.Close asChild>
           <IconButton aria-label="Close dialog" size="sm">
-            <X size={16} />
+            <Cancel01Icon size={16} />
           </IconButton>
         </DialogPrimitive.Close>
       )}
     </div>
   );
 }
+

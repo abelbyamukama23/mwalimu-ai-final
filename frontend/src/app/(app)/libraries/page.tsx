@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  Books,
-  Buildings,
-  FolderPlus,
-  MagnifyingGlass,
-  Plus,
-} from "@phosphor-icons/react";
+  Book02Icon,
+  Building01Icon,
+  FolderAddIcon,
+  PlusSignIcon,
+  Search01Icon,
+} from "hugeicons-react";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -77,12 +77,12 @@ export default function LibrariesPage() {
             </p>
           </div>
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus size={16} aria-hidden /> Create library
+            <PlusSignIcon size={16} aria-hidden /> Create library
           </Button>
         </div>
 
         <div className="relative mb-6 max-w-[400px]">
-          <MagnifyingGlass
+          <Search01Icon
             size={16}
             aria-hidden
             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-tertiary"
@@ -117,7 +117,7 @@ export default function LibrariesPage() {
               </div>
             ) : myLibraries.length === 0 ? (
               <EmptyState
-                icon={FolderPlus}
+                icon={FolderAddIcon}
                 title="No personal libraries yet"
                 body={
                   searchQuery
@@ -142,13 +142,13 @@ export default function LibrariesPage() {
               </div>
             ) : !hasAnyMembership ? (
               <EmptyState
-                icon={Buildings}
+                icon={Building01Icon}
                 title="No institution connected"
                 body="You don't have an institution connected yet. Mwalimu can still be used independently. Institutional libraries become available after joining an institution."
               />
             ) : institutionLibraries.length === 0 ? (
               <EmptyState
-                icon={Books}
+                icon={Book02Icon}
                 title="No institutional libraries"
                 body="No libraries have been shared with you in your connected institutions yet."
               />
@@ -169,7 +169,7 @@ export default function LibrariesPage() {
               </div>
             ) : discoverLibraries.length === 0 ? (
               <EmptyState
-                icon={Books}
+                icon={Book02Icon}
                 title="No discoverable libraries"
                 body="Discoverable libraries published across your institution will appear here."
               />

@@ -1,16 +1,16 @@
 import {
-  Bell,
-  Buildings,
-  Globe,
-  Link,
-  MapPin,
-  Microphone,
-  PaintBrush,
-  ShieldCheck,
-  Sparkle,
-  UserCircle,
-  type Icon,
-} from "@phosphor-icons/react";
+  Building01Icon,
+  Globe02Icon,
+  Link01Icon,
+  Location01Icon,
+  Mic01Icon,
+  Notification01Icon,
+  PaintBrush01Icon,
+  Shield01Icon,
+  SparklesIcon,
+  UserCircleIcon,
+} from "hugeicons-react";
+import type { ComponentType } from "react";
 
 export type SettingsSectionStatus =
   | { kind: "backend"; label: string }
@@ -20,7 +20,7 @@ export type SettingsSectionStatus =
 export type SettingsSection = {
   id: string;
   label: string;
-  icon: Icon;
+  icon: ComponentType<{ size?: number | string; className?: string; "aria-hidden"?: boolean }>;
   description: string;
   status: SettingsSectionStatus;
 };
@@ -33,63 +33,63 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "general",
     label: "General",
-    icon: UserCircle,
+    icon: UserCircleIcon,
     description: "Your profile, display name, and account details.",
     status: { kind: "backend", label: "Profile & Identity" },
   },
   {
     id: "learning",
     label: "Learning",
-    icon: Sparkle,
+    icon: SparklesIcon,
     description: "How Mwalimu explains things — style, depth, and pedagogical memory.",
     status: { kind: "backend", label: "Pedagogical Grounding" },
   },
   {
     id: "language",
     label: "Language",
-    icon: Globe,
+    icon: Globe02Icon,
     description: "Interface and pedagogical response language.",
     status: { kind: "local", label: "Device & AI response" },
   },
   {
     id: "voice",
     label: "Voice",
-    icon: Microphone,
+    icon: Mic01Icon,
     description: "Speech playback speed and spoken audio output.",
     status: { kind: "local", label: "Stored on this device only" },
   },
   {
     id: "notifications",
     label: "Notifications",
-    icon: Bell,
+    icon: Notification01Icon,
     description: "What Mwalimu tells you about, and when.",
     status: { kind: "pending", label: "Coming soon" },
   },
   {
     id: "appearance",
     label: "Appearance",
-    icon: PaintBrush,
+    icon: PaintBrush01Icon,
     description: "Theme, density, and color scheme.",
     status: { kind: "local", label: "Stored on this device only" },
   },
   {
     id: "privacy",
     label: "Privacy",
-    icon: ShieldCheck,
+    icon: Shield01Icon,
     description: "What Mwalimu remembers and stores about you.",
     status: { kind: "backend", label: "Data Controls" },
   },
   {
     id: "connected-accounts",
     label: "Connected accounts",
-    icon: Link,
+    icon: Link01Icon,
     description: "Third-party services linked to your Mwalimu workspace.",
     status: { kind: "backend", label: "OAuth Identity" },
   },
   {
     id: "familiar-regions",
     label: "Familiar regions",
-    icon: MapPin,
+    icon: Location01Icon,
     description:
       "Places whose farming practices, climate, and daily life you understand. Mwalimu prefers these for examples.",
     status: { kind: "backend", label: "Backed by Context API" },
@@ -97,7 +97,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "institution",
     label: "Institution",
-    icon: Buildings,
+    icon: Building01Icon,
     description:
       "Connect to a school or university to access shared libraries and curriculum resources.",
     status: { kind: "backend", label: "Backed by Memberships API" },

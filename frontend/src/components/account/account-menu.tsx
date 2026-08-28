@@ -1,15 +1,15 @@
 "use client";
 
 import {
-  Buildings,
-  Gear,
-  Globe,
-  MapPin,
-  PaintBrush,
-  SignOut,
-  Sparkle,
-  UserCircle,
-} from "@phosphor-icons/react";
+  Building01Icon,
+  Globe02Icon,
+  Location01Icon,
+  Logout01Icon,
+  PaintBrush01Icon,
+  Settings01Icon,
+  SparklesIcon,
+  UserCircleIcon,
+} from "hugeicons-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSettingsModal } from "@/components/settings/settings-modal";
@@ -24,13 +24,13 @@ import {
 
 /** Account-menu entries → Settings modal sections. */
 const MENU = [
-  { id: "general", icon: UserCircle, label: "Profile" },
-  { id: "general", icon: Gear, label: "Settings" },
-  { id: "familiar-regions", icon: MapPin, label: "Familiar regions" },
-  { id: "institution", icon: Buildings, label: "Institution" },
-  { id: "appearance", icon: PaintBrush, label: "Appearance" },
-  { id: "language", icon: Globe, label: "Language" },
-  { id: "learning", icon: Sparkle, label: "Preferences" },
+  { id: "general", icon: UserCircleIcon, label: "Profile" },
+  { id: "general", icon: Settings01Icon, label: "Settings" },
+  { id: "familiar-regions", icon: Location01Icon, label: "Familiar regions" },
+  { id: "institution", icon: Building01Icon, label: "Institution" },
+  { id: "appearance", icon: PaintBrush01Icon, label: "Appearance" },
+  { id: "language", icon: Globe02Icon, label: "Language" },
+  { id: "learning", icon: SparklesIcon, label: "Preferences" },
 ] as const;
 
 /**
@@ -55,17 +55,16 @@ export function AccountMenu({ trigger }: { trigger: ReactNode }) {
           const Icon = item.icon;
           return (
             <DropdownMenuItem key={item.label} onClick={() => openSettings(item.id)}>
-              <Icon size={18} weight="duotone" aria-hidden className="text-ink-tertiary" /> {item.label}
+              <Icon size={16} aria-hidden className="text-ink-tertiary" /> {item.label}
             </DropdownMenuItem>
           );
         })}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
-          <SignOut size={18} weight="duotone" aria-hidden className="text-ink-tertiary" />
+          <Logout01Icon size={16} aria-hidden className="text-ink-tertiary" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
-

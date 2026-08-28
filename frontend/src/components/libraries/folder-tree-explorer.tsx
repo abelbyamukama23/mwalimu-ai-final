@@ -1,20 +1,16 @@
 "use client";
 
 import {
-  CaretRight,
-  DownloadSimple,
-  Folder,
-  FolderPlus,
-  FolderSimple,
-  GridFour,
-  House,
-  ListDashes,
-  MagnifyingGlass,
-  Plus,
-  Trash,
-  UploadSimple,
-} from "@phosphor-icons/react";
-
+  ArrowRight01Icon,
+  Download01Icon,
+  FileUploadIcon,
+  Folder01Icon,
+  FolderAddIcon,
+  Grid02Icon,
+  Home01Icon,
+  ListViewIcon,
+  Search01Icon,
+} from "hugeicons-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -153,13 +149,13 @@ export function FolderTreeExplorer({
             onClick={() => handleNavigateToBreadcrumb(-1)}
             className="flex items-center gap-1 font-semibold text-ink-secondary hover:text-accent focus-ring rounded px-1.5 py-0.5"
           >
-            <House size={16} weight="duotone" className="text-accent" aria-hidden />
+            <Home01Icon size={16} className="text-accent" aria-hidden />
             <span>Root</span>
           </button>
 
           {currentPath.map((seg, idx) => (
             <div key={idx} className="flex items-center gap-1">
-              <CaretRight size={12} weight="bold" className="text-ink-tertiary" />
+              <ArrowRight01Icon size={12} className="text-ink-tertiary" />
               <button
                 type="button"
                 onClick={() => handleNavigateToBreadcrumb(idx)}
@@ -179,7 +175,7 @@ export function FolderTreeExplorer({
         <div className="flex items-center gap-2">
           {/* Search within folder */}
           <div className="relative">
-            <MagnifyingGlass
+            <Search01Icon
               size={14}
               className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-tertiary"
             />
@@ -203,7 +199,7 @@ export function FolderTreeExplorer({
               }`}
               title="Grid card view"
             >
-              <GridFour size={16} weight={viewMode === "grid" ? "fill" : "regular"} />
+              <Grid02Icon size={16} />
             </button>
             <button
               type="button"
@@ -215,7 +211,7 @@ export function FolderTreeExplorer({
               }`}
               title="Table list view"
             >
-              <ListDashes size={16} weight={viewMode === "table" ? "bold" : "regular"} />
+              <ListViewIcon size={16} />
             </button>
           </div>
 
@@ -226,18 +222,17 @@ export function FolderTreeExplorer({
                 size="sm"
                 onClick={() => setNewFolderOpen(true)}
               >
-                <FolderPlus size={15} weight="duotone" aria-hidden /> New folder
+                <FolderAddIcon size={15} aria-hidden /> New folder
               </Button>
               <Button
                 size="sm"
                 onClick={() => setUploadOpen(true)}
               >
-                <UploadSimple size={15} weight="bold" aria-hidden /> Upload
+                <FileUploadIcon size={15} aria-hidden /> Upload
               </Button>
             </>
           )}
         </div>
-
       </div>
 
       {/* New Folder Inline Form */}
@@ -246,7 +241,7 @@ export function FolderTreeExplorer({
           onSubmit={handleCreateFolder}
           className="flex items-center gap-2 rounded-lg border border-accent/40 bg-accent-subtle/20 p-3"
         >
-          <Folder size={16} className="text-accent shrink-0" />
+          <Folder01Icon size={16} className="text-accent shrink-0" />
           <Input
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
@@ -292,7 +287,7 @@ export function FolderTreeExplorer({
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent-subtle/40 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
-                      <Folder size={16} />
+                      <Folder01Icon size={16} />
                     </div>
                     <span className="text-13 font-semibold text-ink group-hover:text-accent transition-colors">
                       {folderName}
@@ -301,7 +296,7 @@ export function FolderTreeExplorer({
 
                   <div className="flex items-center gap-2">
                     <Badge tone="neutral">{count} {count === 1 ? "item" : "items"}</Badge>
-                    <CaretRight size={14} className="text-ink-tertiary" />
+                    <ArrowRight01Icon size={14} className="text-ink-tertiary" />
                   </div>
                 </button>
               );
@@ -313,7 +308,7 @@ export function FolderTreeExplorer({
       {/* Files Section */}
       {currentFileList.length === 0 && currentFolderList.length === 0 ? (
         <EmptyState
-          icon={Folder}
+          icon={Folder01Icon}
           title={
             currentPath.length > 0
               ? `Folder "${currentPath[currentPath.length - 1]}" is empty`
@@ -323,12 +318,11 @@ export function FolderTreeExplorer({
           action={
             canManage ? (
               <Button onClick={() => setUploadOpen(true)}>
-                <UploadSimple size={14} weight="bold" aria-hidden /> Upload resource here
+                <FileUploadIcon size={14} aria-hidden /> Upload resource here
               </Button>
             ) : undefined
           }
         />
-
       ) : currentFileList.length > 0 && viewMode === "grid" ? (
         /* Grid Display Cards */
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -389,8 +383,7 @@ export function FolderTreeExplorer({
                       className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-tertiary hover:bg-surface hover:text-ink focus-ring"
                       title="Download"
                     >
-                      <DownloadSimple size={16} weight="bold" />
-
+                      <Download01Icon size={16} />
                     </a>
                   </div>
                 </div>
