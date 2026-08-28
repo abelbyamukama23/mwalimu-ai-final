@@ -83,4 +83,7 @@ memurai-log.txt
 # Misc
 *.bak
 *.tmp
+.wrangler/
+scratch/
+
 

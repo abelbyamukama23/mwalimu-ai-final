@@ -202,3 +202,16 @@ export async function listConnectionSyncJobs(
     `/api/v1/libraries/${libraryId}/connections/${connectionId}/sync-jobs/`,
   );
 }
+
+export async function triggerConnectionSync(
+  libraryId: string,
+  connectionId: string,
+): Promise<ConnectionSyncJob> {
+  return apiFetch<ConnectionSyncJob>(
+    `/api/v1/libraries/${libraryId}/connections/${connectionId}/sync/`,
+    {
+      method: "POST",
+    },
+  );
+}
+

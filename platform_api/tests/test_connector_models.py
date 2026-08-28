@@ -82,16 +82,20 @@ def connector(
     sample_auth_schema: dict[str, object],
 ) -> Connector:
     """Return sample active Connector."""
-    return Connector.objects.create(
-        name="Web Crawler",
+    connector, _ = Connector.objects.update_or_create(
         slug="web-crawler",
-        description="Crawls documentation websites.",
-        connector_type=ConnectorType.WEB_CRAWLER,
-        auth_type=ConnectorAuthType.API_KEY,
-        config_schema=sample_config_schema,
-        auth_schema=sample_auth_schema,
-        is_active=True,
+        defaults={
+            "name": "Web Crawler",
+            "description": "Crawls documentation websites.",
+            "connector_type": ConnectorType.WEB_CRAWLER,
+            "auth_type": ConnectorAuthType.API_KEY,
+            "config_schema": sample_config_schema,
+            "auth_schema": sample_auth_schema,
+            "is_active": True,
+        },
     )
+    return connector
+
 
 
 # ---------------------------------------------------------------------------

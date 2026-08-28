@@ -10,6 +10,7 @@ import {
   Key,
   Network,
   Plus,
+  RefreshCw,
   Settings,
   Trash2,
 } from "lucide-react";
@@ -29,7 +30,9 @@ import { useToast } from "@/components/ui/toast";
 import {
   useDeleteLibraryConnection,
   useLibraryConnections,
+  useTriggerConnectionSync,
 } from "@/lib/hooks/use-connectors";
+
 import {
   useDeleteLibrary,
   useLibrary,
@@ -56,6 +59,7 @@ export default function LibraryDetailPage() {
   const updateMutation = useUpdateLibrary(libraryId ?? "");
   const deleteMutation = useDeleteLibrary();
   const deleteConnectionMutation = useDeleteLibraryConnection(libraryId ?? "");
+  const syncConnectionMutation = useTriggerConnectionSync(libraryId ?? "");
   const toast = useToast();
 
   const [createConnOpen, setCreateConnOpen] = useState(false);
@@ -152,6 +156,18 @@ export default function LibraryDetailPage() {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to delete connection.";
+      toast(message);
+    }
+  };
+
+  const handleTriggerSync = async (conn: Connection) => {
+    try {
+      await syncConnectionMutation.mutateAsync(conn.id);
+      toast(`Sync job queued for "${conn.name}"`);
+      setSelectedConnForSync({ id: conn.id, name: conn.name });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to trigger sync.";
       toast(message);
     }
   };
@@ -348,6 +364,29 @@ export default function LibraryDetailPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {canManage && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTriggerSync(conn)}
+                          disabled={
+                            syncConnectionMutation.isPending ||
+                            conn.status === "syncing"
+                          }
+                          title="Sync external knowledge now"
+                        >
+                          <RefreshCw
+                            size={14}
+                            className={
+                              conn.status === "syncing"
+                                ? "animate-spin"
+                                : ""
+                            }
+                            aria-hidden
+                          />{" "}
+                          Sync
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

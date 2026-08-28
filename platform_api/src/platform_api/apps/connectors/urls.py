@@ -8,6 +8,7 @@ from .views import (
     LibraryConnectionDetailView,
     LibraryConnectionListCreateView,
     LibraryConnectionSyncListView,
+    LibraryConnectionSyncTriggerView,
 )
 
 urlpatterns = [
@@ -28,8 +29,14 @@ urlpatterns = [
         name="library-connection-detail",
     ),
     path(
+        "libraries/<uuid:library_id>/connections/<uuid:connection_id>/sync/",
+        LibraryConnectionSyncTriggerView.as_view(),
+        name="library-connection-sync-trigger",
+    ),
+    path(
         "libraries/<uuid:library_id>/connections/<uuid:connection_id>/sync-jobs/",
         LibraryConnectionSyncListView.as_view(),
         name="library-connection-sync-list",
     ),
 ]
+

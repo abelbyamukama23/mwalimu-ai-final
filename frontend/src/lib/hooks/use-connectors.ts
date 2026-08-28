@@ -127,3 +127,25 @@ export function useConnectionSyncJobs(
     enabled: Boolean(libraryId && connectionId),
   });
 }
+
+export function useTriggerConnectionSync(libraryId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<ConnectionSyncJob, Error, string>({
+    mutationFn: (connectionId) => triggerConnectionSync(libraryId, connectionId),
+    onSuccess: (_data, connectionId) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["libraries", libraryId, "connections"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "libraries",
+          libraryId,
+          "connections",
+          connectionId,
+          "sync-jobs",
+        ],
+      });
+    },
+  });
+}
+

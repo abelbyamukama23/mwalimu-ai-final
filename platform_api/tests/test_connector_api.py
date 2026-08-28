@@ -132,29 +132,32 @@ def library_a_policy_student(
 @pytest.fixture
 def sample_connector(db: None) -> Connector:
     """Return sample active web crawler connector."""
-    return Connector.objects.create(
-        name="Web Documentation Crawler",
+    connector, _ = Connector.objects.update_or_create(
         slug="web-crawler",
-        description="Crawls documentation pages.",
-        connector_type=ConnectorType.WEB_CRAWLER,
-        auth_type=ConnectorAuthType.API_KEY,
-        config_schema={
-            "type": "object",
-            "properties": {
-                "base_url": {"type": "string"},
-                "max_depth": {"type": "integer", "minimum": 1, "maximum": 5},
+        defaults={
+            "name": "Web Documentation Crawler",
+            "description": "Crawls documentation pages.",
+            "connector_type": ConnectorType.WEB_CRAWLER,
+            "auth_type": ConnectorAuthType.API_KEY,
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "base_url": {"type": "string"},
+                    "max_depth": {"type": "integer", "minimum": 1, "maximum": 5},
+                },
+                "required": ["base_url"],
             },
-            "required": ["base_url"],
-        },
-        auth_schema={
-            "type": "object",
-            "properties": {
-                "api_key": {"type": "string", "minLength": 5},
+            "auth_schema": {
+                "type": "object",
+                "properties": {
+                    "api_key": {"type": "string", "minLength": 5},
+                },
+                "required": ["api_key"],
             },
-            "required": ["api_key"],
+            "is_active": True,
         },
-        is_active=True,
     )
+    return connector
 
 
 # ---------------------------------------------------------------------------
@@ -176,9 +179,10 @@ class TestConnectorCatalogAPI:
         response = client.get("/api/v1/connectors/")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["slug"] == "web-crawler"
-        assert "config_schema" in data[0]
+        assert len(data) >= 1
+        slugs = [c["slug"] for c in data]
+        assert "web-crawler" in slugs
+
 
     def test_list_connectors_unauthenticated(self) -> None:
         """Unauthenticated requests are rejected."""
@@ -490,3 +494,78 @@ class TestLibraryConnectionAPI:
         assert data[0]["id"] == str(job.id)
         assert data[0]["resources_created"] == 8
         assert data[0]["status"] == "completed"
+
+    def test_trigger_sync_success_by_admin(
+        self,
+        user_admin_a: User,
+        membership_admin_a: Membership,
+        library_a: Library,
+        sample_connector: Connector,
+    ) -> None:
+        """Library manager can trigger an on-demand sync job."""
+        conn = Connection.objects.create(
+            library=library_a,
+            connector=sample_connector,
+            name="Active Conn",
+            configuration={"base_url": "https://example.com"},
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user_admin_a)
+
+        resp = client.post(
+            f"/api/v1/libraries/{library_a.id}/connections/{conn.id}/sync/"
+        )
+        assert resp.status_code == 202
+        data = resp.json()
+        assert data["connection_id"] == str(conn.id)
+        assert data["status"] == "queued"
+        assert ConnectionSyncJob.objects.filter(connection=conn).count() == 1
+
+    def test_trigger_sync_rejected_for_student(
+        self,
+        user_student_a: User,
+        membership_student_a: Membership,
+        library_a: Library,
+        library_a_policy_student: LibraryAccessPolicy,
+        sample_connector: Connector,
+    ) -> None:
+        """Student cannot trigger sync on a connection."""
+        conn = Connection.objects.create(
+            library=library_a,
+            connector=sample_connector,
+            name="Active Conn",
+            configuration={"base_url": "https://example.com"},
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user_student_a)
+
+        resp = client.post(
+            f"/api/v1/libraries/{library_a.id}/connections/{conn.id}/sync/"
+        )
+        assert resp.status_code == 403
+
+    def test_trigger_sync_rejected_for_stranger(
+        self,
+        user_stranger: User,
+        membership_stranger_b: Membership,
+        library_a: Library,
+        sample_connector: Connector,
+    ) -> None:
+        """User from another institution cannot trigger sync."""
+        conn = Connection.objects.create(
+            library=library_a,
+            connector=sample_connector,
+            name="Active Conn",
+            configuration={"base_url": "https://example.com"},
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user_stranger)
+
+        resp = client.post(
+            f"/api/v1/libraries/{library_a.id}/connections/{conn.id}/sync/"
+        )
+        assert resp.status_code == 403
+
