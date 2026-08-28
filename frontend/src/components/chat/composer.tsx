@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp01Icon, StopIcon } from "hugeicons-react";
+import { ArrowUp02Icon, StopIcon } from "hugeicons-react";
 import {
   forwardRef,
   useCallback,
@@ -131,7 +131,7 @@ export const Composer = forwardRef<
                 : "cursor-not-allowed bg-subtle text-ink-tertiary",
             )}
           >
-            <ArrowUp01Icon size={18} aria-hidden />
+            <ArrowUp02Icon size={18} aria-hidden />
           </button>
         )}
         </div>
@@ -139,4 +139,5 @@ export const Composer = forwardRef<
     </div>
   );
 });
+
 

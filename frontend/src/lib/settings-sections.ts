@@ -5,7 +5,7 @@ import {
   Location01Icon,
   Mic01Icon,
   Notification01Icon,
-  PaintBrush01Icon,
+  PaintBoardIcon,
   Shield01Icon,
   SparklesIcon,
   UserCircleIcon,
@@ -68,7 +68,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "appearance",
     label: "Appearance",
-    icon: PaintBrush01Icon,
+    icon: PaintBoardIcon,
     description: "Theme, density, and color scheme.",
     status: { kind: "local", label: "Stored on this device only" },
   },

@@ -5,7 +5,7 @@ import {
   Globe02Icon,
   Location01Icon,
   Logout01Icon,
-  PaintBrush01Icon,
+  PaintBoardIcon,
   Settings01Icon,
   SparklesIcon,
   UserCircleIcon,
@@ -28,7 +28,7 @@ const MENU = [
   { id: "general", icon: Settings01Icon, label: "Settings" },
   { id: "familiar-regions", icon: Location01Icon, label: "Familiar regions" },
   { id: "institution", icon: Building01Icon, label: "Institution" },
-  { id: "appearance", icon: PaintBrush01Icon, label: "Appearance" },
+  { id: "appearance", icon: PaintBoardIcon, label: "Appearance" },
   { id: "language", icon: Globe02Icon, label: "Language" },
   { id: "learning", icon: SparklesIcon, label: "Preferences" },
 ] as const;
