@@ -82,6 +82,17 @@ export function ServiceIntegrationCard({
 
 
   const handleOAuthConnect = async () => {
+    // Open popup immediately in click event stack to prevent browser popup blockers
+    const width = 600;
+    const height = 700;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    const popup = window.open(
+      "about:blank",
+      `Connect_${connector.id}`,
+      `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`,
+    );
+
     try {
       setIsAuthorizing(true);
       const provider =
@@ -96,24 +107,19 @@ export function ServiceIntegrationCard({
         provider,
       );
 
-      // Open OAuth popup window
-      const width = 600;
-      const height = 700;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-      window.open(
-        authorization_url,
-        `Connect ${connector.name}`,
-        `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`,
-      );
+      if (popup) {
+        popup.location.href = authorization_url;
+      }
       setIsAuthorizing(false);
     } catch (err: unknown) {
+      if (popup) popup.close();
       const msg =
         err instanceof Error ? err.message : "Failed to initiate authorization.";
       toast(msg);
       setIsAuthorizing(false);
     }
   };
+
 
   const handleQuickSync = async () => {
     if (!existingConnection) return;
