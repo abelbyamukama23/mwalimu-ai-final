@@ -308,16 +308,22 @@ export default function LibraryDetailPage() {
               <div className="space-y-6 pt-2">
                 {/* Available Integrations Grid */}
                 <div>
-                  <div className="mb-3 flex items-center justify-between">
+                  <div className="mb-4 flex items-center justify-between">
                     <div>
-                      <h3 className="text-14 font-semibold text-ink">
-                        Connected Services & Knowledge Integrations
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-accent/10 px-2 py-0.5 text-11 font-medium text-accent">
+                          Academic Integrations
+                        </span>
+                      </div>
+                      <h3 className="mt-1 text-15 font-semibold text-ink">
+                        Personal Academic Workspaces
                       </h3>
                       <p className="text-12 text-ink-secondary">
-                        Seamlessly link external accounts or knowledge stores to synchronize documents into this library.
+                        Link your personal cloud study drives, class lecture notebooks, and course document databases to ground AI tutors in your learning materials.
                       </p>
                     </div>
                   </div>
+
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {(connectors ?? [])

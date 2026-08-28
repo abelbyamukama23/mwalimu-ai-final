@@ -51,6 +51,21 @@ function getServiceIcon(connectorType: string) {
   }
 }
 
+function getAcademicBadge(connectorType: string) {
+  switch (connectorType) {
+    case "google_drive":
+      return { tag: "Cloud Study Drive", scope: "Google Docs, Slides & Handouts" };
+    case "notion":
+      return { tag: "Study Databases", scope: "Course Databases, Trackers & Notes" };
+    case "s3":
+      return { tag: "Course Storage", scope: "Textbooks, Media & Archives" };
+    case "file_system":
+      return { tag: "Local Device", scope: "Offline PDFs & Course Folders" };
+    default:
+      return { tag: "Academic Resource", scope: "Educational Documents & Syllabi" };
+  }
+}
+
 export function ServiceIntegrationCard({
   connector,
   libraryId,
@@ -66,6 +81,8 @@ export function ServiceIntegrationCard({
   const toast = useToast();
 
   const isConnected = Boolean(existingConnection);
+  const academicInfo = getAcademicBadge(connector.connector_type);
+
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -157,13 +174,16 @@ export function ServiceIntegrationCard({
                 {getServiceIcon(connector.connector_type)}
               </div>
               <div>
-                <h3 className="text-14 font-semibold text-ink">
-                  {connector.name}
-                </h3>
-                <span className="text-11 capitalize text-ink-tertiary">
-                  {connector.auth_type === "oauth2"
-                    ? "OAuth 2.0 Direct"
-                    : connector.auth_type.replace("_", " ")}
+                <div className="flex items-center gap-2">
+                  <h3 className="text-14 font-semibold text-ink">
+                    {connector.name}
+                  </h3>
+                  <span className="rounded bg-subtle px-1.5 py-0.5 text-10 font-medium text-ink-secondary">
+                    {academicInfo.tag}
+                  </span>
+                </div>
+                <span className="text-11 text-ink-tertiary">
+                  {academicInfo.scope}
                 </span>
               </div>
             </div>
@@ -181,6 +201,7 @@ export function ServiceIntegrationCard({
             {connector.description ||
               `Sync your ${connector.name} documents and knowledge directly into this library.`}
           </p>
+
         </div>
 
         {/* Action Buttons */}
