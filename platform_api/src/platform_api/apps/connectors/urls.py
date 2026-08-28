@@ -9,6 +9,8 @@ from .views import (
     LibraryConnectionListCreateView,
     LibraryConnectionSyncListView,
     LibraryConnectionSyncTriggerView,
+    OAuthAuthorizeView,
+    OAuthCallbackView,
 )
 
 urlpatterns = [
@@ -19,9 +21,19 @@ urlpatterns = [
         name="connector-detail",
     ),
     path(
+        "connectors/oauth/<str:provider>/callback/",
+        OAuthCallbackView.as_view(),
+        name="connector-oauth-callback",
+    ),
+    path(
         "libraries/<uuid:library_id>/connections/",
         LibraryConnectionListCreateView.as_view(),
         name="library-connection-list-create",
+    ),
+    path(
+        "libraries/<uuid:library_id>/connections/oauth/<str:provider>/authorize/",
+        OAuthAuthorizeView.as_view(),
+        name="library-connection-oauth-authorize",
     ),
     path(
         "libraries/<uuid:library_id>/connections/<uuid:connection_id>/",
@@ -39,4 +51,5 @@ urlpatterns = [
         name="library-connection-sync-list",
     ),
 ]
+
 

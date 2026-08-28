@@ -323,3 +323,143 @@ class LibraryConnectionSyncTriggerView(APIView):
         serializer = ConnectionSyncJobSerializer(sync_job)
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
+
+# ---------------------------------------------------------------------------
+# OAuth 2.0 Views
+# ---------------------------------------------------------------------------
+
+
+class OAuthAuthorizeView(APIView):
+    """Generate authorization consent URL for connecting third-party OAuth providers."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="Generate OAuth consent URL",
+        description="Generates signed OAuth 2.0 authorization URL for a library connection.",
+        responses={200: dict},
+    )
+    def get(
+        self, request: Request, library_id: uuid.UUID, provider: str
+    ) -> Response:
+        """Return OAuth authorization URL."""
+        assert isinstance(request.user, User)
+        library = _get_managed_library(request.user, library_id)
+
+        from .oauth import OAuthError, get_oauth_authorization_url
+
+        redirect_uri = request.build_absolute_uri(
+            f"/api/v1/connectors/oauth/{provider}/callback/"
+        )
+
+        try:
+            auth_url = get_oauth_authorization_url(
+                provider=provider,
+                library_id=library.id,
+                user_id=request.user.id,
+                redirect_uri=redirect_uri,
+            )
+            return Response(
+                {"provider": provider, "authorization_url": auth_url},
+                status=status.HTTP_200_OK,
+            )
+        except OAuthError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class OAuthCallbackView(APIView):
+    """Receive authorization code, exchange tokens, and persist library connection."""
+
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        summary="OAuth callback handler",
+        description="Exchanges OAuth authorization code for tokens and saves encrypted credentials.",
+        responses={200: ConnectionDetailSerializer},
+    )
+    def get(self, request: Request, provider: str) -> Response:
+        """Handle OAuth callback."""
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        error = request.query_params.get("error")
+
+        if error:
+            return Response(
+                {"detail": f"OAuth provider returned error: {error}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not code or not state:
+            return Response(
+                {"detail": "Missing 'code' or 'state' parameter in callback."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from .models import ConnectorType
+        from .oauth import OAuthError, decode_oauth_state, exchange_oauth_code
+
+        try:
+            state_data = decode_oauth_state(state)
+        except OAuthError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        library_id = uuid.UUID(state_data["library_id"])
+        user_id = uuid.UUID(state_data["user_id"])
+
+        try:
+            library = Library.objects.get(id=library_id)
+            user = User.objects.get(id=user_id)
+        except (Library.DoesNotExist, User.DoesNotExist):
+            return Response(
+                {"detail": "Target library or user not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        redirect_uri = request.build_absolute_uri(
+            f"/api/v1/connectors/oauth/{provider}/callback/"
+        )
+
+        try:
+            credentials = exchange_oauth_code(
+                provider=provider,
+                code=code,
+                redirect_uri=redirect_uri,
+            )
+        except OAuthError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Match Connector
+        connector_type = (
+            ConnectorType.GOOGLE_DRIVE if provider == "google" else ConnectorType.NOTION
+        )
+        connector = Connector.objects.filter(
+            connector_type=connector_type, is_active=True
+        ).first()
+
+        if not connector:
+            return Response(
+                {"detail": f"Connector for '{provider}' not found or inactive."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Create or update Connection
+        conn_name = f"{provider.title()} Connection"
+        connection, created = Connection.objects.get_or_create(
+            library=library,
+            name=conn_name,
+            defaults={
+                "connector": connector,
+                "created_by": user,
+                "status": Connection._meta.get_field("status").default,
+            },
+        )
+        connection.connector = connector
+        connection.set_credentials(credentials)
+        connection.save()
+
+        serializer = ConnectionDetailSerializer(connection)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+

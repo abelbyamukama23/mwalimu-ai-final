@@ -1,0 +1,242 @@
+"""Google Drive connector adapter for library knowledge ingestion."""
+
+from __future__ import annotations
+
+import hashlib
+import io
+import logging
+from typing import TYPE_CHECKING, Any
+
+import httpx
+
+from platform_api.apps.processing.services import enqueue_processing
+from platform_api.apps.resources.models import Resource, ResourceStatus, ResourceType
+from platform_api.apps.resources.object_key import generate_resource_object_key
+from platform_api.apps.resources.storage import get_object_storage
+
+from .base import BaseConnectorAdapter, SyncResult
+
+if TYPE_CHECKING:
+    from platform_api.apps.connectors.models import Connection, ConnectionSyncJob
+
+logger = logging.getLogger(__name__)
+
+GOOGLE_DRIVE_API_BASE = "https://www.googleapis.com/drive/v3"
+
+
+class GoogleDriveAdapter(BaseConnectorAdapter):
+    """Adapter to ingest documents, PDFs, and exported Docs from Google Drive."""
+
+    def __init__(self, http_client: httpx.Client | None = None) -> None:
+        """Initialize adapter with optional client injection for testing."""
+        self._custom_client = http_client
+
+    def _get_client(self, token: str) -> httpx.Client:
+        """Return HTTP client with Bearer authorization."""
+        if self._custom_client is not None:
+            return self._custom_client
+        return httpx.Client(
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+                "User-Agent": "Mwalimu-GoogleDriveAdapter/1.0",
+            },
+            timeout=30.0,
+            follow_redirects=True,
+        )
+
+    def test_connection(self, connection: Connection) -> bool:
+        """Validate access token against the Google Drive API."""
+        creds = connection.get_credentials()
+        token = creds.get("oauth_token") or creds.get("access_token")
+        if not token:
+            return False
+
+        try:
+            with self._get_client(token) as client:
+                resp = client.get(f"{GOOGLE_DRIVE_API_BASE}/about?fields=user")
+                return resp.status_code == 200
+        except Exception as exc:
+            logger.warning("Google Drive connection test failed: %s", exc)
+            return False
+
+    def sync(
+        self,
+        connection: Connection,
+        sync_job: ConnectionSyncJob,
+    ) -> SyncResult:
+        """Synchronize files from the specified Google Drive folder into the library."""
+        config = connection.configuration or {}
+        folder_id = config.get("folder_id", "root")
+        creds = connection.get_credentials()
+        token = creds.get("oauth_token") or creds.get("access_token")
+
+        if not token:
+            return SyncResult(
+                error_code="MISSING_CREDENTIALS",
+                error_message="Google Drive OAuth access token is required.",
+            )
+
+        storage = get_object_storage()
+        library = connection.library
+        creator = connection.created_by or library.institution.users.first()
+        result = SyncResult()
+
+        try:
+            with self._get_client(token) as client:
+                # Query files located in the target folder
+                query = f"'{folder_id}' in parents and trashed = false"
+                url = (
+                    f"{GOOGLE_DRIVE_API_BASE}/files"
+                    f"?q={query}&fields=files(id,name,mimeType,size,md5Checksum)&pageSize=100"
+                )
+
+                resp = client.get(url)
+                if resp.status_code != 200:
+                    return SyncResult(
+                        error_code="API_ERROR",
+                        error_message=(
+                            f"Google Drive API returned HTTP {resp.status_code}: {resp.text}"
+                        ),
+                    )
+
+                items = resp.json().get("files", [])
+
+                for item in items:
+                    file_id = item.get("id")
+                    file_name = item.get("name", f"gdrive_file_{file_id}")
+                    mime_type = item.get("mimeType", "")
+
+                    # Skip subfolders from direct download (future recursive support)
+                    if mime_type == "application/vnd.google-apps.folder":
+                        continue
+
+                    result.resources_discovered += 1
+
+                    # Handle native Google Docs/Sheets vs binary files
+                    if mime_type == "application/vnd.google-apps.document":
+                        # Export Google Doc as plain text
+                        export_url = (
+                            f"{GOOGLE_DRIVE_API_BASE}/files/{file_id}/export?mimeType=text/plain"
+                        )
+                        dl_resp = client.get(export_url)
+                        res_type = ResourceType.TXT
+                        ext = ".txt"
+                        content_type = "text/plain; charset=utf-8"
+                    elif mime_type == "application/pdf" or file_name.lower().endswith(".pdf"):
+                        dl_url = f"{GOOGLE_DRIVE_API_BASE}/files/{file_id}?alt=media"
+                        dl_resp = client.get(dl_url)
+                        res_type = ResourceType.PDF
+                        ext = ".pdf"
+                        content_type = "application/pdf"
+                    elif mime_type.startswith("text/") or file_name.lower().endswith(".txt"):
+                        dl_url = f"{GOOGLE_DRIVE_API_BASE}/files/{file_id}?alt=media"
+                        dl_resp = client.get(dl_url)
+                        res_type = ResourceType.TXT
+                        ext = ".txt"
+                        content_type = "text/plain; charset=utf-8"
+                    elif (
+                        "wordprocessingml" in mime_type
+                        or file_name.lower().endswith(".docx")
+                    ):
+                        dl_url = f"{GOOGLE_DRIVE_API_BASE}/files/{file_id}?alt=media"
+                        dl_resp = client.get(dl_url)
+                        res_type = ResourceType.DOCX
+                        ext = ".docx"
+                        content_type = (
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
+                    else:
+                        logger.info(
+                            "Skipping unsupported Google Drive file type: %s (%s)",
+                            file_name,
+                            mime_type,
+                        )
+                        continue
+
+                    if dl_resp.status_code != 200:
+                        logger.warning(
+                            "Failed to download Google Drive file %s: HTTP %s",
+                            file_id,
+                            dl_resp.status_code,
+                        )
+                        continue
+
+                    file_bytes = dl_resp.content
+                    checksum = hashlib.sha256(file_bytes).hexdigest()
+                    safe_filename = f"gdrive_{file_id}{ext}"
+                    display_name = f"[GDrive] {file_name}"[:255]
+
+                    # Check for existing resource with same ID in this library
+                    existing_resource = Resource.objects.filter(
+                        library=library,
+                        original_filename=safe_filename,
+                    ).first()
+
+                    if existing_resource:
+                        if existing_resource.checksum == checksum:
+                            continue  # Idempotent skip
+
+                        existing_resource.name = display_name
+                        existing_resource.size = len(file_bytes)
+                        existing_resource.checksum = checksum
+                        existing_resource.status = ResourceStatus.READY
+                        existing_resource.save(
+                            update_fields=[
+                                "name",
+                                "size",
+                                "checksum",
+                                "status",
+                                "updated_at",
+                            ]
+                        )
+
+                        storage.upload(
+                            existing_resource.object_key,
+                            io.BytesIO(file_bytes),
+                            content_type=content_type,
+                            size=len(file_bytes),
+                        )
+                        enqueue_processing(existing_resource)
+                        result.resources_updated += 1
+                    else:
+                        new_resource = Resource.objects.create(
+                            library=library,
+                            name=display_name,
+                            resource_type=res_type,
+                            original_filename=safe_filename,
+                            content_type=content_type,
+                            size=len(file_bytes),
+                            object_key="pending",
+                            checksum=checksum,
+                            status=ResourceStatus.READY,
+                            created_by=creator,
+                        )
+                        new_resource.object_key = generate_resource_object_key(
+                            library.id, new_resource.id
+                        )
+                        new_resource.save(update_fields=["object_key"])
+
+                        storage.upload(
+                            new_resource.object_key,
+                            io.BytesIO(file_bytes),
+                            content_type=content_type,
+                            size=len(file_bytes),
+                        )
+                        enqueue_processing(new_resource)
+                        result.resources_created += 1
+
+        except Exception as exc:
+            logger.exception(
+                "Google Drive sync failed for connection %s: %s", connection.id, exc
+            )
+            return SyncResult(
+                resources_discovered=result.resources_discovered,
+                resources_created=result.resources_created,
+                resources_updated=result.resources_updated,
+                resources_deleted=result.resources_deleted,
+                error_code="SYNC_FAILED",
+                error_message=str(exc),
+            )
+
+        return result

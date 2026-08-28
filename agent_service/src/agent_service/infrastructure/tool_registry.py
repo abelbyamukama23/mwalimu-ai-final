@@ -53,6 +53,35 @@ class ToolRegistry:
         self._tools[name] = tool
         logger.debug("Tool registered: %s", name)
 
+    async def register_mcp_server(
+        self,
+        server_url: str,
+        headers: dict[str, str] | None = None,
+        prefix: str = "",
+    ) -> list[str]:
+        """Connect to an external MCP server, discover tools, and register them."""
+        from agent_service.infrastructure.tools.mcp_adapter import McpToolAdapter
+        from agent_service.infrastructure.tools.mcp_client import McpClientManager
+
+        client = McpClientManager(server_url=server_url, headers=headers)
+        await client.initialize()
+        specs = await client.list_tools()
+
+        registered_names: list[str] = []
+        for spec in specs:
+            raw_name = spec.get("name", "")
+            final_name = f"{prefix}_{raw_name}" if prefix else raw_name
+            adapter = McpToolAdapter(
+                mcp_client=client,
+                tool_spec=spec,
+                name_override=final_name if prefix else None,
+            )
+            if final_name not in self._tools:
+                self.register(adapter)
+                registered_names.append(final_name)
+        return registered_names
+
+
     def get(self, name: str) -> ToolProtocol | None:
         """Resolve a tool by name, or return None."""
         return self._tools.get(name)
