@@ -9,6 +9,7 @@ import {
   listConnectionSyncJobs,
   listConnectors,
   listLibraryConnections,
+  triggerConnectionSync,
   updateLibraryConnection,
   type Connection,
   type ConnectionSyncJob,

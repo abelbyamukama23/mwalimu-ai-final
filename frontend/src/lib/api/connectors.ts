@@ -215,3 +215,13 @@ export async function triggerConnectionSync(
   );
 }
 
+export async function getOAuthAuthorizeUrl(
+  libraryId: string,
+  provider: string,
+): Promise<{ provider: string; authorization_url: string }> {
+  return apiFetch<{ provider: string; authorization_url: string }>(
+    `/api/v1/libraries/${libraryId}/connections/oauth/${provider}/authorize/`,
+  );
+}
+
+

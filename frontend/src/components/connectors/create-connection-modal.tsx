@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ExternalLink, Lock } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +15,7 @@ import {
   useConnectors,
   useCreateLibraryConnection,
 } from "@/lib/hooks/use-connectors";
-import type { Connector, SyncFrequency } from "@/lib/api/connectors";
+import { getOAuthAuthorizeUrl, type Connector, type SyncFrequency } from "@/lib/api/connectors";
 import { DynamicSchemaFields } from "./dynamic-schema-fields";
 
 type CreateConnectionModalProps = {
@@ -39,6 +41,8 @@ export function CreateConnectionModal({
     Record<string, unknown>
   >({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [isAuthorizingOAuth, setIsAuthorizingOAuth] = useState(false);
+
 
   const activeConnectors = useMemo(() => {
     return (connectors ?? []).filter((c) => c.is_active);
@@ -81,7 +85,30 @@ export function CreateConnectionModal({
     setConfigValues({});
     setCredentialValues({});
     setFormError(null);
+    setIsAuthorizingOAuth(false);
   };
+
+  const handleOAuthAuthorize = async () => {
+    if (!selectedConnector) return;
+    try {
+      setIsAuthorizingOAuth(true);
+      setFormError(null);
+      const provider =
+        selectedConnector.connector_type === "google_drive"
+          ? "google"
+          : selectedConnector.connector_type === "notion"
+            ? "notion"
+            : "google";
+      const { authorization_url } = await getOAuthAuthorizeUrl(libraryId, provider);
+      window.location.href = authorization_url;
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to initiate OAuth authorization.";
+      setFormError(msg);
+      setIsAuthorizingOAuth(false);
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,6 +265,29 @@ export function CreateConnectionModal({
                 Credentials are encrypted at rest on the platform API and never
                 exposed after submission.
               </p>
+
+              {selectedConnector?.auth_type === "oauth2" && (
+                <div className="mb-4 rounded-md border border-brand/20 bg-brand-surface p-3.5">
+                  <p className="mb-1.5 text-12 font-medium text-ink">
+                    1-Click Account Authorization
+                  </p>
+                  <p className="mb-3 text-11 text-ink-secondary">
+                    Authorize Mwalimu to securely link and sync your {selectedConnector.name} files with this library.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={isAuthorizingOAuth}
+                    onClick={handleOAuthAuthorize}
+                    className="inline-flex items-center gap-1.5 border-brand/30 text-brand hover:bg-brand-surface"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    {isAuthorizingOAuth ? "Redirecting…" : `Authorize with ${selectedConnector.name}`}
+                  </Button>
+                </div>
+              )}
+
               <DynamicSchemaFields
                 schema={selectedConnector?.auth_schema}
                 values={credentialValues}
@@ -245,6 +295,7 @@ export function CreateConnectionModal({
                 isCredentialSection
               />
             </div>
+
 
             <div className="mt-6 flex justify-end gap-2.5 pt-2">
               <Button
