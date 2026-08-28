@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  browseConnectionFiles,
   createLibraryConnection,
   deleteLibraryConnection,
   getConnector,
@@ -15,8 +16,10 @@ import {
   type ConnectionSyncJob,
   type Connector,
   type CreateConnectionPayload,
+  type RemoteBrowseResponse,
   type UpdateConnectionPayload,
 } from "@/lib/api/connectors";
+
 
 export const CONNECTORS_QUERY_KEY = ["connectors"] as const;
 
@@ -149,4 +152,31 @@ export function useTriggerConnectionSync(libraryId: string) {
     },
   });
 }
+
+export function useBrowseConnection(
+  libraryId: string | undefined,
+  connectionId: string | undefined,
+  folderId?: string,
+  query?: string,
+) {
+  return useQuery<RemoteBrowseResponse>({
+    queryKey: [
+      "libraries",
+      libraryId,
+      "connections",
+      connectionId,
+      "browse",
+      folderId,
+      query,
+    ],
+    queryFn: () => {
+      if (!libraryId || !connectionId) {
+        throw new Error("Library ID and Connection ID are required");
+      }
+      return browseConnectionFiles(libraryId, connectionId, folderId, query);
+    },
+    enabled: Boolean(libraryId && connectionId),
+  });
+}
+
 

@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CreateConnectionModal } from "@/components/connectors/create-connection-modal";
+import { ServiceIntegrationCard } from "@/components/connectors/service-integration-card";
 import { SyncJobsDialog } from "@/components/connectors/sync-jobs-dialog";
 import { FolderTreeExplorer } from "@/components/libraries/folder-tree-explorer";
 import { Badge } from "@/components/ui/badge";
@@ -28,10 +29,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import {
+  useConnectors,
   useDeleteLibraryConnection,
   useLibraryConnections,
   useTriggerConnectionSync,
 } from "@/lib/hooks/use-connectors";
+
 
 import {
   useDeleteLibrary,
@@ -54,7 +57,9 @@ export default function LibraryDetailPage() {
     useLibraryResources(libraryId);
   const { data: connections, isLoading: loadingConnections } =
     useLibraryConnections(libraryId);
+  const { data: connectors, isLoading: loadingConnectors } = useConnectors();
   const { data: memberships } = useMemberships();
+
 
   const updateMutation = useUpdateLibrary(libraryId ?? "");
   const deleteMutation = useDeleteLibrary();
@@ -295,123 +300,153 @@ export default function LibraryDetailPage() {
 
           {/* Tab: Connections */}
           <TabsContent value="connections">
-            {loadingConnections ? (
+            {loadingConnections || loadingConnectors ? (
               <div className="py-12 text-center text-13 text-ink-tertiary">
-                Loading connections…
+                Loading integrations & connections…
               </div>
-            ) : !connections || connections.length === 0 ? (
-              <EmptyState
-                icon={Network}
-                title="No knowledge connections"
-                body="Connect external data sources like web crawlers, object stores, and custom sources to synchronize documents with this library."
-                action={
-                  canManage ? (
-                    <Button
-                      variant="secondary"
-                      onClick={() => setCreateConnOpen(true)}
-                    >
-                      <Plus size={14} aria-hidden /> Add connection
-                    </Button>
-                  ) : undefined
-                }
-              />
             ) : (
-              <div className="space-y-3 pt-2">
-                {connections.map((conn) => (
-                  <div
-                    key={conn.id}
-                    className="flex flex-col justify-between gap-4 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center"
-                  >
+              <div className="space-y-6 pt-2">
+                {/* Available Integrations Grid */}
+                <div>
+                  <div className="mb-3 flex items-center justify-between">
                     <div>
-                      <div className="flex items-center gap-2.5">
-                        <h4 className="text-14 font-semibold text-ink">
-                          {conn.name}
-                        </h4>
-                        <Badge
-                          tone={
-                            conn.status === "active"
-                              ? "success"
-                              : conn.status === "error"
-                                ? "warning"
-                                : "neutral"
-                          }
-                        >
-                          {conn.status}
-                        </Badge>
-                        <span className="text-11 text-ink-tertiary">
-                          {conn.connector.name}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-12 text-ink-tertiary">
-                        <span>Sync: {conn.sync_frequency}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Key size={12} aria-hidden />
-                          Credentials:{" "}
-                          {conn.has_credentials ? "Configured" : "None"}
-                        </span>
-                        {conn.last_synced_at && (
-                          <>
-                            <span>•</span>
-                            <span>
-                              Last sync:{" "}
-                              {new Date(conn.last_synced_at).toLocaleString()} (
-                              {conn.last_sync_status})
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {canManage && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleTriggerSync(conn)}
-                          disabled={
-                            syncConnectionMutation.isPending ||
-                            conn.status === "syncing"
-                          }
-                          title="Sync external knowledge now"
-                        >
-                          <RefreshCw
-                            size={14}
-                            className={
-                              conn.status === "syncing"
-                                ? "animate-spin"
-                                : ""
-                            }
-                            aria-hidden
-                          />{" "}
-                          Sync
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setSelectedConnForSync({
-                            id: conn.id,
-                            name: conn.name,
-                          })
-                        }
-                      >
-                        <History size={14} aria-hidden /> History
-                      </Button>
-                      {canManage && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteConnection(conn)}
-                          className="text-danger hover:bg-danger-surface"
-                        >
-                          <Trash2 size={14} aria-hidden />
-                        </Button>
-                      )}
+                      <h3 className="text-14 font-semibold text-ink">
+                        Connected Services & Knowledge Integrations
+                      </h3>
+                      <p className="text-12 text-ink-secondary">
+                        Seamlessly link external accounts or knowledge stores to synchronize documents into this library.
+                      </p>
                     </div>
                   </div>
-                ))}
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {(connectors ?? [])
+                      .filter((c) => c.is_active)
+                      .map((c) => {
+                        const existing = (connections ?? []).find(
+                          (conn) => conn.connector.id === c.id,
+                        );
+                        return (
+                          <ServiceIntegrationCard
+                            key={c.id}
+                            connector={c}
+                            libraryId={libraryId ?? ""}
+                            existingConnection={existing}
+                            onOpenManualConfig={() => setCreateConnOpen(true)}
+                          />
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* All Connection Instances List */}
+                {connections && connections.length > 0 && (
+                  <div className="border-t border-border pt-5">
+                    <h4 className="mb-3 text-13 font-semibold text-ink">
+                      Active Sync Links ({connections.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {connections.map((conn) => (
+                        <div
+                          key={conn.id}
+                          className="flex flex-col justify-between gap-4 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center"
+                        >
+                          <div>
+                            <div className="flex items-center gap-2.5">
+                              <h4 className="text-14 font-semibold text-ink">
+                                {conn.name}
+                              </h4>
+                              <Badge
+                                tone={
+                                  conn.status === "active"
+                                    ? "success"
+                                    : conn.status === "error"
+                                      ? "warning"
+                                      : "neutral"
+                                }
+                              >
+                                {conn.status}
+                              </Badge>
+                              <span className="text-11 text-ink-tertiary">
+                                {conn.connector.name}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-3 text-12 text-ink-tertiary">
+                              <span>Sync: {conn.sync_frequency}</span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <Key size={12} aria-hidden />
+                                Credentials:{" "}
+                                {conn.has_credentials ? "Encrypted" : "None"}
+                              </span>
+                              {conn.last_synced_at && (
+                                <>
+                                  <span>•</span>
+                                  <span>
+                                    Last sync:{" "}
+                                    {new Date(conn.last_synced_at).toLocaleString()} (
+                                    {conn.last_sync_status})
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {canManage && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleTriggerSync(conn)}
+                                disabled={
+                                  syncConnectionMutation.isPending ||
+                                  conn.status === "syncing"
+                                }
+                                title="Sync external knowledge now"
+                              >
+                                <RefreshCw
+                                  size={14}
+                                  className={
+                                    conn.status === "syncing"
+                                      ? "animate-spin"
+                                      : ""
+                                  }
+                                  aria-hidden
+                                />{" "}
+                                Sync
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setSelectedConnForSync({
+                                  id: conn.id,
+                                  name: conn.name,
+                                })
+                              }
+                              title="View synchronization job history"
+                            >
+                              <History size={14} aria-hidden /> History
+                            </Button>
+                            {canManage && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteConnection(conn)}
+                                disabled={deleteConnectionMutation.isPending}
+                                className="text-danger hover:bg-danger/10"
+                                title="Delete connection"
+                              >
+                                <Trash2 size={14} aria-hidden />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>

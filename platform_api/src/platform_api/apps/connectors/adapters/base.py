@@ -62,3 +62,22 @@ class BaseConnectorAdapter(abc.ABC):
             True if connection and authentication succeed, False otherwise.
         """
         raise NotImplementedError
+
+    def browse(
+        self,
+        connection: Connection,
+        folder_id: str = "root",
+        query: str = "",
+    ) -> dict[str, Any]:
+        """Browse remote resources/folders live for visual selection in the UI.
+
+        Args:
+            connection: Instantiated library connection holding credentials.
+            folder_id: Remote parent folder/database identifier.
+            query: Optional search keyword to filter items.
+
+        Returns:
+            Dict containing current folder info, breadcrumbs, and list of items.
+        """
+        return {"current_folder_id": folder_id, "breadcrumbs": [], "items": []}
+

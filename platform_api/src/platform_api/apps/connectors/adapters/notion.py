@@ -103,11 +103,75 @@ class NotionAdapter(BaseConnectorAdapter):
             logger.warning("Notion connection test failed: %s", exc)
             return False
 
+    def browse(
+        self,
+        connection: Connection,
+        folder_id: str = "root",
+        query: str = "",
+    ) -> dict[str, Any]:
+        """Browse Notion workspace pages and databases live."""
+        creds = connection.get_credentials()
+        token = creds.get("api_key") or creds.get("oauth_token")
+        if not token:
+            return {"error": "Missing Notion credentials", "items": []}
+
+        try:
+            with self._get_client(token) as client:
+                body: dict[str, Any] = {"page_size": 100}
+                if query:
+                    body["query"] = query
+
+                resp = client.post(f"{NOTION_API_BASE}/search", json=body)
+                if resp.status_code != 200:
+                    return {"error": f"Notion API error: {resp.text}", "items": []}
+
+                results = resp.json().get("results", [])
+                items: list[dict[str, Any]] = []
+
+                for obj in results:
+                    obj_type = obj.get("object", "page")
+                    title = "Untitled"
+                    if obj_type == "database":
+                        db_titles = obj.get("title", [])
+                        if db_titles:
+                            title = _extract_rich_text(db_titles)
+                    else:
+                        props = obj.get("properties", {})
+                        for prop_val in props.values():
+                            if prop_val.get("type") == "title":
+                                title_texts = prop_val.get("title", [])
+                                if title_texts:
+                                    title = _extract_rich_text(title_texts)
+                                break
+
+                    items.append(
+                        {
+                            "id": obj.get("id"),
+                            "name": title,
+                            "type": "folder" if obj_type == "database" else "file",
+                            "mime_type": f"notion/{obj_type}",
+                            "size": 0,
+                            "modified_at": obj.get("last_edited_time"),
+                        }
+                    )
+
+                items.sort(key=lambda x: (x["type"] != "folder", x["name"].lower()))
+                return {
+                    "current_folder_id": folder_id,
+                    "breadcrumbs": [{"id": "root", "name": "Workspace"}],
+                    "items": items,
+                }
+        except Exception as exc:
+            logger.warning("Notion browse failed: %s", exc)
+            return {"error": str(exc), "items": []}
+
     def sync(
         self,
         connection: Connection,
         sync_job: ConnectionSyncJob,
+        selected_ids: list[str] | None = None,
     ) -> SyncResult:
+
         """Synchronize Notion database pages or page blocks into library resources."""
         config = connection.configuration or {}
         database_id = config.get("database_id")

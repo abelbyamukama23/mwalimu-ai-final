@@ -224,4 +224,36 @@ export async function getOAuthAuthorizeUrl(
   );
 }
 
+export type RemoteFileItem = {
+  id: string;
+  name: string;
+  type: "file" | "folder";
+  mime_type?: string;
+  size?: number;
+  modified_at?: string;
+};
+
+export type RemoteBrowseResponse = {
+  current_folder_id: string;
+  breadcrumbs: { id: string; name: string }[];
+  items: RemoteFileItem[];
+  error?: string;
+};
+
+export async function browseConnectionFiles(
+  libraryId: string,
+  connectionId: string,
+  folderId?: string,
+  query?: string,
+): Promise<RemoteBrowseResponse> {
+  const params = new URLSearchParams();
+  if (folderId) params.append("folder_id", folderId);
+  if (query) params.append("query", query);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return apiFetch<RemoteBrowseResponse>(
+    `/api/v1/libraries/${libraryId}/connections/${connectionId}/browse/${qs}`,
+  );
+}
+
+
 

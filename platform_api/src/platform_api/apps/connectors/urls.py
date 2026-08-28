@@ -12,6 +12,7 @@ from .views import (
     OAuthAuthorizeView,
     OAuthCallbackView,
 )
+from .views_browser import RemoteBrowserView
 
 urlpatterns = [
     path("connectors/", ConnectorListView.as_view(), name="connector-list"),
@@ -41,6 +42,11 @@ urlpatterns = [
         name="library-connection-detail",
     ),
     path(
+        "libraries/<uuid:library_id>/connections/<uuid:connection_id>/browse/",
+        RemoteBrowserView.as_view(),
+        name="library-connection-browse",
+    ),
+    path(
         "libraries/<uuid:library_id>/connections/<uuid:connection_id>/sync/",
         LibraryConnectionSyncTriggerView.as_view(),
         name="library-connection-sync-trigger",
@@ -51,5 +57,6 @@ urlpatterns = [
         name="library-connection-sync-list",
     ),
 ]
+
 
 

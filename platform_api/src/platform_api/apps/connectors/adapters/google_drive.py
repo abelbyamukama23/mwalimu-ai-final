@@ -60,10 +60,66 @@ class GoogleDriveAdapter(BaseConnectorAdapter):
             logger.warning("Google Drive connection test failed: %s", exc)
             return False
 
+    def browse(
+        self,
+        connection: Connection,
+        folder_id: str = "root",
+        query: str = "",
+    ) -> dict[str, Any]:
+        """Browse remote Google Drive folders and files live."""
+        creds = connection.get_credentials()
+        token = creds.get("oauth_token") or creds.get("access_token")
+        if not token:
+            return {"error": "Missing OAuth credentials", "items": []}
+
+        try:
+            with self._get_client(token) as client:
+                if query:
+                    q = f"name contains '{query}' and trashed = false"
+                else:
+                    q = f"'{folder_id}' in parents and trashed = false"
+
+                url = (
+                    f"{GOOGLE_DRIVE_API_BASE}/files"
+                    f"?q={q}&fields=files(id,name,mimeType,size,modifiedTime)&pageSize=100"
+                )
+                resp = client.get(url)
+                if resp.status_code != 200:
+                    return {"error": f"Drive API error: {resp.text}", "items": []}
+
+                files = resp.json().get("files", [])
+                items: list[dict[str, Any]] = []
+                for f in files:
+                    is_folder = (
+                        f.get("mimeType") == "application/vnd.google-apps.folder"
+                    )
+                    items.append(
+                        {
+                            "id": f.get("id"),
+                            "name": f.get("name"),
+                            "type": "folder" if is_folder else "file",
+                            "mime_type": f.get("mimeType"),
+                            "size": int(f.get("size", 0)),
+                            "modified_at": f.get("modifiedTime"),
+                        }
+                    )
+
+                # Sort folders first, then files
+                items.sort(key=lambda x: (x["type"] != "folder", x["name"].lower()))
+                return {
+                    "current_folder_id": folder_id,
+                    "breadcrumbs": [{"id": folder_id, "name": "Folder" if folder_id != "root" else "My Drive"}],
+                    "items": items,
+                }
+        except Exception as exc:
+            logger.warning("Google Drive browse failed: %s", exc)
+            return {"error": str(exc), "items": []}
+
     def sync(
         self,
         connection: Connection,
         sync_job: ConnectionSyncJob,
+        selected_ids: list[str] | None = None,
     ) -> SyncResult:
         """Synchronize files from the specified Google Drive folder into the library."""
         config = connection.configuration or {}
@@ -84,23 +140,34 @@ class GoogleDriveAdapter(BaseConnectorAdapter):
 
         try:
             with self._get_client(token) as client:
-                # Query files located in the target folder
-                query = f"'{folder_id}' in parents and trashed = false"
-                url = (
-                    f"{GOOGLE_DRIVE_API_BASE}/files"
-                    f"?q={query}&fields=files(id,name,mimeType,size,md5Checksum)&pageSize=100"
-                )
-
-                resp = client.get(url)
-                if resp.status_code != 200:
-                    return SyncResult(
-                        error_code="API_ERROR",
-                        error_message=(
-                            f"Google Drive API returned HTTP {resp.status_code}: {resp.text}"
-                        ),
+                if selected_ids:
+                    # Directly fetch selected file metadata
+                    items = []
+                    for s_id in selected_ids:
+                        f_resp = client.get(
+                            f"{GOOGLE_DRIVE_API_BASE}/files/{s_id}?fields=id,name,mimeType,size,md5Checksum"
+                        )
+                        if f_resp.status_code == 200:
+                            items.append(f_resp.json())
+                else:
+                    # Query files located in the target folder
+                    query = f"'{folder_id}' in parents and trashed = false"
+                    url = (
+                        f"{GOOGLE_DRIVE_API_BASE}/files"
+                        f"?q={query}&fields=files(id,name,mimeType,size,md5Checksum)&pageSize=100"
                     )
 
-                items = resp.json().get("files", [])
+                    resp = client.get(url)
+                    if resp.status_code != 200:
+                        return SyncResult(
+                            error_code="API_ERROR",
+                            error_message=(
+                                f"Google Drive API returned HTTP {resp.status_code}: {resp.text}"
+                            ),
+                        )
+
+                    items = resp.json().get("files", [])
+
 
                 for item in items:
                     file_id = item.get("id")
