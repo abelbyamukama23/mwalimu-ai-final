@@ -1,6 +1,8 @@
 import uuid
 
+from django.conf import settings
 from drf_spectacular.utils import extend_schema
+
 from rest_framework import permissions, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
@@ -329,6 +331,18 @@ class LibraryConnectionSyncTriggerView(APIView):
 # ---------------------------------------------------------------------------
 
 
+def _get_oauth_redirect_uri(request: Request, provider: str) -> str:
+    """Return canonical OAuth callback redirect URI respecting reverse proxies and HTTPS."""
+    base = getattr(settings, "OAUTH_REDIRECT_BASE_URL", "").strip()
+    if base:
+        return f"{base.rstrip('/')}/api/v1/connectors/oauth/{provider}/callback/"
+    uri = request.build_absolute_uri(f"/api/v1/connectors/oauth/{provider}/callback/")
+    # If in production or forwarded proto is https, ensure https
+    if not getattr(settings, "DEBUG", True) and uri.startswith("http://"):
+        uri = "https://" + uri[7:]
+    return uri
+
+
 class OAuthAuthorizeView(APIView):
     """Generate authorization consent URL for connecting third-party OAuth providers."""
 
@@ -348,9 +362,7 @@ class OAuthAuthorizeView(APIView):
 
         from .oauth import OAuthError, get_oauth_authorization_url
 
-        redirect_uri = request.build_absolute_uri(
-            f"/api/v1/connectors/oauth/{provider}/callback/"
-        )
+        redirect_uri = _get_oauth_redirect_uri(request, provider)
 
         try:
             auth_url = get_oauth_authorization_url(
@@ -371,6 +383,7 @@ class OAuthAuthorizeView(APIView):
             return Response(
                 {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
             )
+
 
 
 class OAuthSandboxView(APIView):
@@ -479,9 +492,8 @@ class OAuthCallbackView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        redirect_uri = request.build_absolute_uri(
-            f"/api/v1/connectors/oauth/{provider}/callback/"
-        )
+        redirect_uri = _get_oauth_redirect_uri(request, provider)
+
 
         try:
             credentials = exchange_oauth_code(
