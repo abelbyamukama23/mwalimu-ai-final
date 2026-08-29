@@ -243,17 +243,11 @@ export function AuthPanel({
             setView({ kind: "signup" });
           }}
         />
-
-        {mode === "page" && view.kind !== "verify_email" && (
-          <p className="mt-6 text-center text-12 leading-relaxed text-ink-tertiary">
-            Mwalimu works without an institution — discover and join institutions later to
-            unlock shared resources.
-          </p>
-        )}
       </div>
     </div>
   );
 }
+
 
 function AuthBody({
   email,
