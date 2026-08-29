@@ -114,6 +114,11 @@ export function ChatView({ sessionId }: { sessionId: string }) {
   const composerRef = useRef<ComposerHandle>(null);
   const dispatchedRef = useRef(false);
 
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  const bottomAnchorRef = useRef<HTMLDivElement>(null);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
+  const userScrolledUpRef = useRef(false);
+
   const resetStreaming = useCallback(() => {
     setStreaming(false);
     setLiveText("");
@@ -140,10 +145,28 @@ export function ChatView({ sessionId }: { sessionId: string }) {
     [sendMessage, resetStreaming],
   );
 
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (bottomAnchorRef.current) {
+      bottomAnchorRef.current.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+        block: "end",
+      });
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!transcriptRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = transcriptRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const scrolledUp = distanceFromBottom > 120;
+    setIsScrolledUp(scrolledUp);
+    userScrolledUpRef.current = scrolledUp;
+  }, []);
+
   // Dispatch a just-created session's first prompt once the conversation mounts.
   useEffect(() => {
     if (!session || dispatchedRef.current) return;
-    const raw = sessionStorage.getItem(`mwalimu.pending.${sessionId}`);
+    const raw = typeof window !== "undefined" ? sessionStorage.getItem(`mwalimu.pending.${sessionId}`) : null;
     if (!raw) return;
     const timer = window.setTimeout(() => {
       sessionStorage.removeItem(`mwalimu.pending.${sessionId}`);
@@ -157,6 +180,20 @@ export function ChatView({ sessionId }: { sessionId: string }) {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [session, sessionId, runSend]);
+
+  // Scroll on new user message or streaming tokens unless user intentionally scrolled up
+  useEffect(() => {
+    if (!userScrolledUpRef.current) {
+      scrollToBottom(true);
+    }
+  }, [pendingUser, liveText, session?.messages, scrollToBottom]);
+
+  // Initial scroll on mount
+  useEffect(() => {
+    if (session?.messages && session.messages.length > 0) {
+      scrollToBottom(false);
+    }
+  }, [sessionId, session?.messages?.length, scrollToBottom]);
 
   if (isLoading) {
     return (
@@ -174,8 +211,6 @@ export function ChatView({ sessionId }: { sessionId: string }) {
         <EmptyState
           icon={BubbleChatIcon}
           title="Conversation not found"
-
-
           body="This conversation doesn’t exist or was cleared. Start a new one to continue."
           action={
             <Link href="/chat/new">
@@ -196,44 +231,8 @@ export function ChatView({ sessionId }: { sessionId: string }) {
     runSend(trimmed, scope);
   };
 
-  const transcriptRef = useRef<HTMLDivElement>(null);
-  const bottomAnchorRef = useRef<HTMLDivElement>(null);
-  const [isScrolledUp, setIsScrolledUp] = useState(false);
-  const userScrolledUpRef = useRef(false);
+  const showSuggestions = (session.messages?.length ?? 0) === 0 && !isBusy && pendingUser === null;
 
-  const scrollToBottom = useCallback((smooth = true) => {
-    if (bottomAnchorRef.current) {
-      bottomAnchorRef.current.scrollIntoView({
-        behavior: smooth ? "smooth" : "auto",
-        block: "end",
-      });
-    }
-  }, []);
-
-  const handleScroll = useCallback(() => {
-    if (!transcriptRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = transcriptRef.current;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    const scrolledUp = distanceFromBottom > 120;
-    setIsScrolledUp(scrolledUp);
-    userScrolledUpRef.current = scrolledUp;
-  }, []);
-
-  // Scroll on new user message or streaming tokens unless user intentionally scrolled up
-  useEffect(() => {
-    if (!userScrolledUpRef.current) {
-      scrollToBottom(true);
-    }
-  }, [pendingUser, liveText, session?.messages, scrollToBottom]);
-
-  // Initial scroll on mount
-  useEffect(() => {
-    if (session?.messages && session.messages.length > 0) {
-      scrollToBottom(false);
-    }
-  }, [sessionId, scrollToBottom]);
-
-  const showSuggestions = session.messages.length === 0 && !isBusy && pendingUser === null;
 
   return (
     <div className="relative flex h-full flex-col">
