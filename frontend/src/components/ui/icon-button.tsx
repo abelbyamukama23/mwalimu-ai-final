@@ -7,7 +7,8 @@ const iconButtonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-cta text-cta-fg hover:bg-cta-hover shadow-xs",
+        primary:
+          "bg-[#18181b] text-white hover:bg-[#27272a] active:bg-[#09090b] dark:bg-white dark:text-[#18181b] dark:hover:bg-zinc-100 shadow-sm",
         ghost: "text-ink-tertiary hover:bg-subtle hover:text-ink-secondary",
         accent: "bg-accent text-white hover:bg-accent-hover shadow-xs",
       },
@@ -19,6 +20,7 @@ const iconButtonVariants = cva(
     defaultVariants: { variant: "ghost", size: "md" },
   },
 );
+
 
 
 export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &

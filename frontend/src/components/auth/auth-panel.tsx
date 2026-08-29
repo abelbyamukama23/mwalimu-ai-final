@@ -208,10 +208,13 @@ export function AuthPanel({
         }
       >
         {/* Brand mark */}
-        <div className="mb-6 flex items-center justify-center gap-2">
-          <span aria-hidden className="h-8 w-8 rounded-sm bg-accent" />
-          <span className="text-17 font-semibold text-ink">Mwalimu</span>
+        <div className="mb-6 flex items-center justify-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-16 font-bold text-white shadow-xs">
+            M
+          </div>
+          <span className="text-18 font-semibold tracking-tight text-ink">Mwalimu</span>
         </div>
+
 
         <div className="mb-6">
           <PanelHeading mode={mode}>{title}</PanelHeading>

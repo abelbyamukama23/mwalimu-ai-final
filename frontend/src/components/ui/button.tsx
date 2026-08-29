@@ -7,7 +7,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-cta text-cta-fg hover:bg-cta-hover shadow-xs",
+        primary:
+          "bg-[#18181b] text-white hover:bg-[#27272a] active:bg-[#09090b] dark:bg-white dark:text-[#18181b] dark:hover:bg-zinc-100 shadow-sm",
         secondary:
           "border border-border bg-surface text-ink hover:bg-subtle shadow-xs",
         ghost: "text-ink-secondary hover:text-ink hover:bg-subtle",
@@ -23,6 +24,7 @@ const buttonVariants = cva(
     defaultVariants: { variant: "primary", size: "md" },
   },
 );
+
 
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
