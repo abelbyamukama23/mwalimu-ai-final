@@ -18,10 +18,12 @@
   --color-accent-hover: #184a41;
   --color-accent-subtle: #e6efec;
 
-  /* CTA / Primary Action button (Deep Ink / Crisp High Contrast) */
-  --color-cta: #18181b;
+  /* CTA / Primary Action button (Vibrant Royal Blue / Crisp White Text) */
+  --color-cta: #2563eb;
   --color-cta-fg: #ffffff;
-  --color-cta-hover: #27272a;
+  --color-cta-hover: #1d4ed8;
+  --color-cta-active: #1e40af;
+
 
   /* Ink */
   --color-ink: #1a1a18;
@@ -143,9 +145,11 @@
   --color-accent-hover: #5cb7a9;
   --color-accent-subtle: #24332f;
 
-  --color-cta: #f4f4f5;
-  --color-cta-fg: #18181b;
-  --color-cta-hover: #e4e4e7;
+  --color-cta: #3b82f6;
+  --color-cta-fg: #ffffff;
+  --color-cta-hover: #2563eb;
+  --color-cta-active: #1d4ed8;
+
 
   --color-ink: #e8e6e2;
 

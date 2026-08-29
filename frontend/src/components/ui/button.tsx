@@ -8,10 +8,10 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-[#18181b] text-white hover:bg-[#27272a] active:bg-[#09090b] dark:bg-white dark:text-[#18181b] dark:hover:bg-zinc-100 shadow-sm",
+          "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500 shadow-sm",
         secondary:
           "border border-border bg-surface text-ink hover:bg-subtle shadow-xs",
-        ghost: "text-ink-secondary hover:text-ink hover:bg-subtle",
+        ghost: "text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30",
         accent: "bg-accent text-white hover:bg-accent-hover shadow-xs",
         terracotta: "bg-terracotta text-white hover:bg-terracotta/90 shadow-xs",
       },
@@ -24,6 +24,7 @@ const buttonVariants = cva(
     defaultVariants: { variant: "primary", size: "md" },
   },
 );
+
 
 
 

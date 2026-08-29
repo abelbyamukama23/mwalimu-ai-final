@@ -8,7 +8,7 @@ const iconButtonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-[#18181b] text-white hover:bg-[#27272a] active:bg-[#09090b] dark:bg-white dark:text-[#18181b] dark:hover:bg-zinc-100 shadow-sm",
+          "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500 shadow-sm",
         ghost: "text-ink-tertiary hover:bg-subtle hover:text-ink-secondary",
         accent: "bg-accent text-white hover:bg-accent-hover shadow-xs",
       },
@@ -20,6 +20,7 @@ const iconButtonVariants = cva(
     defaultVariants: { variant: "ghost", size: "md" },
   },
 );
+
 
 
 
