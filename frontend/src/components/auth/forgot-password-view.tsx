@@ -128,7 +128,7 @@ export function ForgotPasswordView({
           <button
             type="button"
             onClick={() => setStep("request")}
-            className="shrink-0 text-12 font-medium text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
+            className="shrink-0 text-12 font-medium text-[#0d7a68] transition-colors hover:text-[#0a6657] hover:underline"
           >
             Change
           </button>
@@ -241,7 +241,7 @@ export function ForgotPasswordView({
               type="button"
               disabled={resending}
               onClick={handleResend}
-              className="font-medium text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline disabled:opacity-50"
+              className="font-medium text-[#0d7a68] transition-colors hover:text-[#0a6657] hover:underline disabled:opacity-50"
             >
               {resending ? "Sending code…" : "Resend code"}
             </button>
@@ -290,7 +290,7 @@ export function ForgotPasswordView({
         <button
           type="button"
           onClick={onBackToLogin}
-          className="text-13 font-semibold text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
+          className="text-13 font-semibold text-[#0d7a68] transition-colors hover:text-[#0a6657] hover:underline"
         >
           Remember your password? Log in
         </button>

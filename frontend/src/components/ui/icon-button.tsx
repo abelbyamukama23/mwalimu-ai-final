@@ -8,10 +8,11 @@ const iconButtonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-[#1f5c52] text-white hover:bg-[#184a41] active:bg-[#133932] shadow-sm",
+          "bg-[#0d7a68] !text-white hover:bg-[#0a6657] active:bg-[#075246] shadow-xs",
         ghost: "text-ink-tertiary hover:bg-subtle hover:text-ink-secondary",
-        accent: "bg-[#1f5c52] text-white hover:bg-[#184a41] shadow-xs",
+        accent: "bg-[#0d7a68] !text-white hover:bg-[#0a6657] shadow-xs",
       },
+
       size: {
         sm: "h-7 w-7",
         md: "h-9 w-9",

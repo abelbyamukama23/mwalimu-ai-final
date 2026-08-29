@@ -14,15 +14,16 @@
   --color-active: #e6efec;
 
   /* Emerald primary (trust/intelligence) */
-  --color-accent: #1f5c52;
-  --color-accent-hover: #184a41;
+  --color-accent: #0d7a68;
+  --color-accent-hover: #0a6657;
   --color-accent-subtle: #e6efec;
 
-  /* CTA / Primary Action button (Mwalimu Emerald Green / Crisp White Text) */
-  --color-cta: #1f5c52;
+  /* CTA / Primary Action button (Mwalimu Saturated Emerald Green / Pure White Text) */
+  --color-cta: #0d7a68;
   --color-cta-fg: #ffffff;
-  --color-cta-hover: #184a41;
-  --color-cta-active: #133932;
+  --color-cta-hover: #0a6657;
+  --color-cta-active: #075246;
+
 
 
 
@@ -182,6 +183,21 @@
   ::selection {
     background: var(--color-active);
   }
+
+  /* Guarantee crisp white text on all active primary and CTA action buttons */
+  button.bg-\[\#0d7a68\]:not(:disabled),
+  button.bg-\[\#1f5c52\]:not(:disabled),
+  button.bg-cta:not(:disabled),
+  button.bg-accent:not(:disabled) {
+    color: #ffffff !important;
+  }
+
+  button.bg-\[\#0d7a68\]:not(:disabled) *,
+  button.bg-\[\#1f5c52\]:not(:disabled) *,
+  button.bg-cta:not(:disabled) *,
+  button.bg-accent:not(:disabled) * {
+    color: #ffffff !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -192,3 +208,4 @@
     transition-duration: 0.01ms !important;
   }
 }
+
