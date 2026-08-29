@@ -166,7 +166,7 @@ export function SignupForm({
         <button
           type="button"
           onClick={onLogin}
-          className="focus-ring rounded-sm font-medium text-accent hover:underline"
+          className="focus-ring rounded-sm font-semibold text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
         >
           Log in
         </button>
@@ -174,3 +174,4 @@ export function SignupForm({
     </div>
   );
 }
+

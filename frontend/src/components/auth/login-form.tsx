@@ -99,7 +99,7 @@ export function LoginForm({
             <button
               type="button"
               onClick={onForgot}
-              className="focus-ring rounded-sm text-12 text-accent hover:underline"
+              className="focus-ring rounded-sm text-12 font-medium text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
             >
               Forgot password?
             </button>
@@ -145,11 +145,12 @@ export function LoginForm({
         <button
           type="button"
           onClick={onSignup}
-          className="focus-ring rounded-sm font-medium text-accent hover:underline"
+          className="focus-ring rounded-sm font-semibold text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
         >
           Sign up
         </button>
       </p>
+
     </div>
   );
 }

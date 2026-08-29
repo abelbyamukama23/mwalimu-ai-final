@@ -85,10 +85,11 @@ export function OtpVerificationView({
         <button
           type="button"
           onClick={onBack}
-          className="shrink-0 text-12 font-medium text-accent hover:underline"
+          className="shrink-0 text-12 font-medium text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
         >
           Change
         </button>
+
       </div>
 
       {/* 6-digit OTP Input */}
@@ -164,11 +165,12 @@ export function OtpVerificationView({
             type="button"
             disabled={resending}
             onClick={handleResend}
-            className="font-medium text-accent hover:underline disabled:opacity-50"
+            className="font-semibold text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline disabled:opacity-50"
           >
             {resending ? "Sending code…" : "Resend code"}
           </button>
         )}
+
       </div>
     </form>
   );

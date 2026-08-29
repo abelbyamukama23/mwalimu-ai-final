@@ -18,11 +18,12 @@
   --color-accent-hover: #184a41;
   --color-accent-subtle: #e6efec;
 
-  /* CTA / Primary Action button (Vibrant Royal Blue / Crisp White Text) */
-  --color-cta: #2563eb;
+  /* CTA / Primary Action button (Mwalimu Emerald Green / Crisp White Text) */
+  --color-cta: #1f5c52;
   --color-cta-fg: #ffffff;
-  --color-cta-hover: #1d4ed8;
-  --color-cta-active: #1e40af;
+  --color-cta-hover: #184a41;
+  --color-cta-active: #133932;
+
 
 
   /* Ink */
@@ -145,10 +146,11 @@
   --color-accent-hover: #5cb7a9;
   --color-accent-subtle: #24332f;
 
-  --color-cta: #3b82f6;
+  --color-cta: #1f5c52;
   --color-cta-fg: #ffffff;
-  --color-cta-hover: #2563eb;
-  --color-cta-active: #1d4ed8;
+  --color-cta-hover: #184a41;
+  --color-cta-active: #133932;
+
 
 
   --color-ink: #e8e6e2;
