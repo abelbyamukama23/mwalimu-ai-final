@@ -32,9 +32,14 @@ export function SignupForm({
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [confirmTouched, setConfirmTouched] = useState(false);
 
+  const isEmailValid = isValidEmail(email);
+  const showEmailError = emailTouched && email.length > 0 && !isEmailValid;
+  const showMismatchError = confirmTouched && confirm.length > 0 && password !== confirm;
   const passwordValid = password.length > 0 && password === confirm;
-  const canSubmit = isValidEmail(email) && passwordValid;
+  const canSubmit = isEmailValid && passwordValid && !submitting;
 
   return (
     <div className="space-y-4">
@@ -44,15 +49,15 @@ export function SignupForm({
             type="button"
             onClick={onGoogleSignup}
             disabled={submitting}
-            className="focus-ring flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-surface px-4 text-13 font-medium text-ink transition-colors duration-150 hover:bg-surface-elevated hover:border-border-strong disabled:opacity-60"
+            className="focus-ring flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-[#d4d4d8] bg-surface px-4 text-13 font-medium text-ink shadow-2xs transition-all duration-150 hover:bg-[#f4f4f5] hover:border-[#a1a1aa] active:scale-[0.99] disabled:opacity-60 cursor-pointer"
           >
-            <BrandIcon name="google" size={16} />
+            <BrandIcon name="google" size={18} />
             <span>Continue with Google</span>
           </button>
 
-          <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center justify-center py-0.5">
             <div className="w-full border-t border-border" />
-            <span className="absolute bg-surface px-2.5 text-11 uppercase tracking-wider text-ink-tertiary">
+            <span className="absolute bg-surface px-2.5 text-[11px] font-medium uppercase tracking-wider text-[#a1a1aa]">
               or
             </span>
           </div>
@@ -62,9 +67,9 @@ export function SignupForm({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (canSubmit && !submitting) onSubmit(email, password, confirm);
+          if (canSubmit) onSubmit(email, password, confirm);
         }}
-        className="space-y-3.5"
+        className="space-y-4"
       >
         <div>
           <label
@@ -79,13 +84,20 @@ export function SignupForm({
             autoComplete="email"
             inputMode="email"
             required
-            autoFocus
+            autoFocus={!email}
             placeholder="you@example.com"
             value={email}
+            error={showEmailError}
+            aria-describedby={showEmailError ? "signup-email-error" : undefined}
             onChange={(e) => onChangeEmail(e.target.value)}
+            onBlur={() => setEmailTouched(true)}
             disabled={submitting}
-            className="text-13"
           />
+          {showEmailError && (
+            <p id="signup-email-error" role="alert" className="mt-1.5 text-12 font-medium text-red-600">
+              Please enter a valid email address.
+            </p>
+          )}
         </div>
 
         <div>
@@ -105,7 +117,7 @@ export function SignupForm({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={submitting}
-              className="pr-11 text-13"
+              className="pr-11"
             />
             <IconButton
               type="button"
@@ -134,9 +146,12 @@ export function SignupForm({
               required
               placeholder="Repeat your password"
               value={confirm}
+              error={showMismatchError}
+              aria-describedby={showMismatchError ? "signup-mismatch-error" : undefined}
               onChange={(e) => setConfirm(e.target.value)}
+              onBlur={() => setConfirmTouched(true)}
               disabled={submitting}
-              className="pr-11 text-13"
+              className="pr-11"
             />
             <IconButton
               type="button"
@@ -148,6 +163,11 @@ export function SignupForm({
               {showConfirm ? <ViewOffIcon size={16} /> : <ViewIcon size={16} />}
             </IconButton>
           </div>
+          {showMismatchError && (
+            <p id="signup-mismatch-error" role="alert" className="mt-1.5 text-12 font-medium text-red-600">
+              Passwords do not match.
+            </p>
+          )}
         </div>
 
         {error && (
@@ -156,17 +176,22 @@ export function SignupForm({
           </p>
         )}
 
-        <Button type="submit" className="w-full" disabled={!canSubmit || submitting}>
+        <Button
+          type="submit"
+          className="w-full h-11 text-14 font-medium"
+          disabled={!canSubmit}
+          loading={submitting}
+        >
           {submitting ? "Creating account…" : "Create account"}
         </Button>
       </form>
 
-      <p className="pt-1 text-center text-13 text-ink-secondary">
+      <p className="pt-2 text-center text-13 text-ink-secondary">
         Already have an account?{" "}
         <button
           type="button"
           onClick={onLogin}
-          className="focus-ring rounded-sm font-semibold text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
+          className="focus-ring rounded-sm font-semibold text-[#0d7a68] underline underline-offset-2 transition-colors hover:text-[#0a6657]"
         >
           Log in
         </button>
@@ -174,4 +199,3 @@ export function SignupForm({
     </div>
   );
 }
-

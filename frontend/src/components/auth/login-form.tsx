@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { isValidEmail } from "@/lib/auth/email";
 
 /**
- * Direct single-screen login form: Google Login + Email + Password.
+ * Direct single-screen login form: Google Login + Email + Password with inline validation.
  */
 export function LoginForm({
   email,
@@ -33,8 +33,11 @@ export function LoginForm({
 }) {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
 
-  const canSubmit = isValidEmail(email) && password.length > 0 && !submitting;
+  const isEmailValid = isValidEmail(email);
+  const showEmailError = emailTouched && email.length > 0 && !isEmailValid;
+  const canSubmit = isEmailValid && password.length > 0 && !submitting;
 
   return (
     <div className="space-y-4">
@@ -44,15 +47,15 @@ export function LoginForm({
             type="button"
             onClick={onGoogleLogin}
             disabled={submitting}
-            className="focus-ring flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-surface px-4 text-13 font-medium text-ink transition-colors duration-150 hover:bg-surface-elevated hover:border-border-strong disabled:opacity-60"
+            className="focus-ring flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-[#d4d4d8] bg-surface px-4 text-13 font-medium text-ink shadow-2xs transition-all duration-150 hover:bg-[#f4f4f5] hover:border-[#a1a1aa] active:scale-[0.99] disabled:opacity-60 cursor-pointer"
           >
-            <BrandIcon name="google" size={16} />
+            <BrandIcon name="google" size={18} />
             <span>Continue with Google</span>
           </button>
 
-          <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center justify-center py-0.5">
             <div className="w-full border-t border-border" />
-            <span className="absolute bg-surface px-2.5 text-11 uppercase tracking-wider text-ink-tertiary">
+            <span className="absolute bg-surface px-2.5 text-[11px] font-medium uppercase tracking-wider text-[#a1a1aa]">
               or
             </span>
           </div>
@@ -64,7 +67,7 @@ export function LoginForm({
           e.preventDefault();
           if (canSubmit) onSubmit(email, password);
         }}
-        className="space-y-3.5"
+        className="space-y-4"
       >
         <div>
           <label
@@ -82,28 +85,28 @@ export function LoginForm({
             autoFocus={!email}
             placeholder="you@example.com"
             value={email}
-            onChange={(e) => onChangeEmail(e.target.value)}
+            error={showEmailError}
+            aria-describedby={showEmailError ? "email-format-error" : undefined}
+            onChange={(e) => {
+              onChangeEmail(e.target.value);
+            }}
+            onBlur={() => setEmailTouched(true)}
             disabled={submitting}
-            className="text-13"
           />
+          {showEmailError && (
+            <p id="email-format-error" role="alert" className="mt-1.5 text-12 font-medium text-red-600">
+              Please enter a valid email address.
+            </p>
+          )}
         </div>
 
         <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <label
-              htmlFor="auth-password"
-              className="text-13 font-medium text-ink"
-            >
-              Password
-            </label>
-            <button
-              type="button"
-              onClick={onForgot}
-              className="focus-ring rounded-sm text-12 font-medium text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
-            >
-              Forgot password?
-            </button>
-          </div>
+          <label
+            htmlFor="auth-password"
+            className="mb-1.5 block text-13 font-medium text-ink"
+          >
+            Password
+          </label>
           <div className="relative">
             <Input
               id="auth-password"
@@ -115,7 +118,7 @@ export function LoginForm({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={submitting}
-              className="pr-11 text-13"
+              className="pr-11"
             />
             <IconButton
               type="button"
@@ -127,6 +130,15 @@ export function LoginForm({
               {show ? <ViewOffIcon size={16} /> : <ViewIcon size={16} />}
             </IconButton>
           </div>
+          <div className="flex justify-end pt-1.5">
+            <button
+              type="button"
+              onClick={onForgot}
+              className="focus-ring rounded-sm text-12 font-medium text-[#0d7a68] transition-colors hover:text-[#0a6657] hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -135,22 +147,27 @@ export function LoginForm({
           </p>
         )}
 
-        <Button type="submit" className="w-full" disabled={!canSubmit}>
+        <Button
+          type="submit"
+          className="w-full h-11 text-14 font-medium"
+          disabled={!canSubmit}
+          loading={submitting}
+        >
           {submitting ? "Logging in…" : "Log in"}
         </Button>
       </form>
 
-      <p className="pt-1 text-center text-13 text-ink-secondary">
+      <p className="pt-2 text-center text-13 text-ink-secondary">
         New to Mwalimu?{" "}
         <button
           type="button"
           onClick={onSignup}
-          className="focus-ring rounded-sm font-semibold text-[#1f5c52] transition-colors hover:text-[#184a41] hover:underline"
+          className="focus-ring rounded-sm font-semibold text-[#0d7a68] underline underline-offset-2 transition-colors hover:text-[#0a6657]"
         >
           Sign up
         </button>
       </p>
-
     </div>
   );
 }
+

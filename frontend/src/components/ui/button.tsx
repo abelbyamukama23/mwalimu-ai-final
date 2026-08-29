@@ -3,18 +3,20 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-150 focus-ring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
+  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-150 focus-ring active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100",
   {
     variants: {
       variant: {
         primary:
-          "bg-[#1f5c52] text-white hover:bg-[#184a41] active:bg-[#133932] shadow-sm",
+          "bg-[#0d7a68] text-white hover:bg-[#0a6657] active:bg-[#075246] shadow-xs disabled:bg-[#f4f4f5] disabled:text-[#a1a1aa] disabled:border disabled:border-[#e4e4e7] disabled:shadow-none dark:disabled:bg-[#27272a] dark:disabled:text-[#71717a] dark:disabled:border-[#3f3f46]",
         secondary:
-          "border border-border bg-surface text-ink hover:bg-subtle shadow-xs",
+          "border border-border bg-surface text-ink hover:bg-subtle shadow-xs disabled:bg-[#f4f4f5] disabled:text-[#a1a1aa] disabled:border-[#e4e4e7]",
         ghost:
-          "text-[#1f5c52] hover:bg-[#e6efec] dark:text-[#4fa89b] dark:hover:bg-[#24332f]",
-        accent: "bg-[#1f5c52] text-white hover:bg-[#184a41] shadow-xs",
-        terracotta: "bg-terracotta text-white hover:bg-terracotta/90 shadow-xs",
+          "text-[#0d7a68] hover:bg-[#e6efec] dark:text-[#4fa89b] dark:hover:bg-[#24332f] disabled:text-[#a1a1aa] disabled:hover:bg-transparent",
+        accent:
+          "bg-[#0d7a68] text-white hover:bg-[#0a6657] shadow-xs disabled:bg-[#f4f4f5] disabled:text-[#a1a1aa]",
+        terracotta:
+          "bg-terracotta text-white hover:bg-terracotta/90 shadow-xs disabled:bg-[#f4f4f5] disabled:text-[#a1a1aa]",
       },
       size: {
         sm: "h-8 px-3 text-13",
@@ -26,23 +28,49 @@ const buttonVariants = cva(
   },
 );
 
-
-
-
-
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
-  VariantProps<typeof buttonVariants>;
+  VariantProps<typeof buttonVariants> & {
+    loading?: boolean;
+  };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, type = "button", ...props }, ref) => (
+  ({ className, variant, size, type = "button", loading = false, disabled, children, ...props }, ref) => (
     <button
       ref={ref}
       type={type}
+      disabled={disabled || loading}
+      aria-busy={loading ? "true" : undefined}
       className={cn(buttonVariants({ variant, size }), className)}
       {...props}
-    />
+    >
+      {loading && (
+        <svg
+          className="h-4 w-4 animate-spin shrink-0 text-current"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="3.5"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      )}
+      {children}
+    </button>
   ),
 );
 Button.displayName = "Button";
 
 export { buttonVariants };
+

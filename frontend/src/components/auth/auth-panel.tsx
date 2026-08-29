@@ -176,14 +176,15 @@ export function AuthPanel({
     }
   };
 
-  let title = "Log in";
-  let subtitle = "Enter your email and password to access your learning workspace.";
+  let title = "Welcome back";
+  let subtitle = "Please login to access your personalized learning workspace.";
 
   switch (view.kind) {
     case "login":
-      title = "Log in";
-      subtitle = "Access your personalized learning workspace and course materials.";
+      title = "Welcome back";
+      subtitle = "Please login to access your personalized learning workspace.";
       break;
+
     case "signup":
       title = "Create your account";
       subtitle = "Join Mwalimu to explore personalized AI tutors and shared libraries.";
