@@ -94,13 +94,13 @@ export function ConfirmConversationDialog({
           </Button>
           <Button
             type="button"
-            variant="primary"
-            className={cn(destructive && "bg-terracotta text-white hover:bg-terracotta/90")}
-            disabled={pending}
+            variant={destructive ? "danger" : "primary"}
+            loading={pending}
             onClick={onConfirm}
           >
             {pending ? "Working…" : confirmLabel}
           </Button>
+
         </div>
       </DialogContent>
     </Dialog>

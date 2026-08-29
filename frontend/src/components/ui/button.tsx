@@ -17,6 +17,8 @@ const buttonVariants = cva(
           "bg-[#0d7a68] !text-white hover:bg-[#0a6657] shadow-xs disabled:!bg-[#f4f4f5] disabled:!text-[#a1a1aa]",
         terracotta:
           "bg-terracotta !text-white hover:bg-terracotta/90 shadow-xs disabled:!bg-[#f4f4f5] disabled:!text-[#a1a1aa]",
+        danger:
+          "bg-red-600 !text-white hover:bg-red-700 active:bg-red-800 shadow-xs disabled:!bg-[#f4f4f5] disabled:!text-[#a1a1aa] disabled:!border-[#e4e4e7]",
       },
       size: {
         sm: "h-8 px-3 text-13",
@@ -49,8 +51,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const isWhiteTextVariant =
-      variant === "primary" || variant === "accent" || variant === "terracotta";
+      variant === "primary" ||
+      variant === "accent" ||
+      variant === "terracotta" ||
+      variant === "danger";
     const isDisabled = disabled || loading;
+
 
     return (
       <button

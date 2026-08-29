@@ -19,21 +19,24 @@ function detectResourceType(filename: string): "pdf" | "docx" | "txt" {
 export function ResourceUploadModal({
   open,
   onOpenChange,
-  libraryId,
   currentFolder,
+  onStartUpload,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  libraryId: string;
   currentFolder?: string;
+  onStartUpload: (data: {
+    file: File;
+    name: string;
+    resourceType: "pdf" | "docx" | "txt";
+    targetFolder: string;
+  }) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [resourceType, setResourceType] = useState<"pdf" | "docx" | "txt">("pdf");
-  const [folderPrefix, setFolderPrefix] = useState(currentFolder || "");
   const [dragOver, setDragOver] = useState(false);
 
-  const uploadMutation = useUploadLibraryResource(libraryId);
   const toast = useToast();
 
   const handleFileChange = (selectedFile: File) => {
@@ -41,40 +44,30 @@ export function ResourceUploadModal({
     const inferredType = detectResourceType(selectedFile.name);
     setResourceType(inferredType);
     if (!name) {
-      // Clean extension for human title
       const baseName = selectedFile.name.replace(/\.[^/.]+$/, "");
       setName(baseName);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
       toast("Please select a file to upload.");
       return;
     }
 
-    const finalName = folderPrefix.trim()
-      ? `${folderPrefix.trim().replace(/\/+$/, "")}/${name.trim() || file.name}`
-      : name.trim() || file.name;
+    const target = currentFolder?.trim() || "";
+    onStartUpload({
+      file,
+      name: name.trim() || file.name,
+      resourceType,
+      targetFolder: target,
+    });
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("name", finalName);
-    formData.append("resource_type", resourceType);
-
-    try {
-      await uploadMutation.mutateAsync(formData);
-      toast(`"${finalName}" uploaded successfully. Chunking initiated.`);
-      onOpenChange(false);
-      // Reset form
-      setFile(null);
-      setName("");
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to upload resource.";
-      toast(message);
-    }
+    // Close modal immediately and clear form so user is never frozen
+    onOpenChange(false);
+    setFile(null);
+    setName("");
   };
 
   return (
@@ -88,7 +81,7 @@ export function ResourceUploadModal({
                 Upload Resource
               </DialogPrimitive.Title>
               <DialogPrimitive.Description className="text-12 text-ink-secondary mt-0.5">
-                Upload notes, textbooks, or course files (PDF, DOCX, TXT) to this library.
+                Upload notes, textbooks, or course documents to this library.
               </DialogPrimitive.Description>
             </div>
             <DialogPrimitive.Close asChild>
@@ -102,7 +95,18 @@ export function ResourceUploadModal({
             </DialogPrimitive.Close>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            {/* Context target folder badge */}
+            <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3.5 py-2.5 text-12 text-ink">
+              <span className="text-16">📁</span>
+              <div className="truncate">
+                <span className="text-ink-secondary">Destination folder: </span>
+                <strong className="font-semibold text-ink">
+                  {currentFolder || "Root library (Top level)"}
+                </strong>
+              </div>
+            </div>
+
             {/* File Dropzone */}
             <div
               onDragOver={(e) => {
@@ -176,47 +180,26 @@ export function ResourceUploadModal({
               />
             </div>
 
-            {/* Folder / Category (Optional) */}
-            <div className="space-y-1.5">
-              <label className="text-12 font-medium text-ink flex items-center justify-between">
-                <span>Folder / Subcategory (Optional)</span>
-                <span className="text-11 text-ink-tertiary">e.g. Unit 1/Mechanics</span>
-              </label>
-              <Input
-                value={folderPrefix}
-                onChange={(e) => setFolderPrefix(e.target.value)}
-                placeholder="Leave blank for library root"
-              />
-            </div>
-
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => onOpenChange(false)}
-                disabled={uploadMutation.isPending}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={!file || uploadMutation.isPending}
+                disabled={!file}
               >
-                {uploadMutation.isPending ? (
-                  <>
-                    <Loading03Icon size={14} className="mr-1.5 animate-spin" />
-                    Uploading to R2…
-                  </>
-                ) : (
-                  "Upload & Chunk"
-                )}
+                Upload & Chunk
               </Button>
             </div>
           </form>
-
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );
 }
+

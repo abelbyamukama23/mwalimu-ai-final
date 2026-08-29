@@ -196,12 +196,53 @@ export function ChatView({ sessionId }: { sessionId: string }) {
     runSend(trimmed, scope);
   };
 
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  const bottomAnchorRef = useRef<HTMLDivElement>(null);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
+  const userScrolledUpRef = useRef(false);
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (bottomAnchorRef.current) {
+      bottomAnchorRef.current.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+        block: "end",
+      });
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!transcriptRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = transcriptRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const scrolledUp = distanceFromBottom > 120;
+    setIsScrolledUp(scrolledUp);
+    userScrolledUpRef.current = scrolledUp;
+  }, []);
+
+  // Scroll on new user message or streaming tokens unless user intentionally scrolled up
+  useEffect(() => {
+    if (!userScrolledUpRef.current) {
+      scrollToBottom(true);
+    }
+  }, [pendingUser, liveText, session?.messages, scrollToBottom]);
+
+  // Initial scroll on mount
+  useEffect(() => {
+    if (session?.messages && session.messages.length > 0) {
+      scrollToBottom(false);
+    }
+  }, [sessionId, scrollToBottom]);
+
   const showSuggestions = session.messages.length === 0 && !isBusy && pendingUser === null;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
       {/* Transcript — continuous canvas, scrolls to the top of the viewport. */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-6 md:px-12 md:pt-8">
+      <div
+        ref={transcriptRef}
+        onScroll={handleScroll}
+        className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-6 md:px-12 md:pt-8 scroll-smooth"
+      >
         <div className="mx-auto flex max-w-[760px] flex-col gap-4">
           {session.messages.map((message) => (
             <Bubble
@@ -224,8 +265,28 @@ export function ChatView({ sessionId }: { sessionId: string }) {
               />
             </>
           )}
+
+          {/* Dedicated bottom scroll anchor */}
+          <div ref={bottomAnchorRef} className="h-2 shrink-0" aria-hidden />
         </div>
       </div>
+
+      {/* Floating Scroll to Bottom button */}
+      {isScrolledUp && (
+        <button
+          type="button"
+          onClick={() => {
+            userScrolledUpRef.current = false;
+            setIsScrolledUp(false);
+            scrollToBottom(true);
+          }}
+          aria-label="Scroll to latest message"
+          className="focus-ring absolute bottom-28 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-surface border border-border px-3 py-1.5 text-12 font-medium text-ink shadow-md transition-all hover:bg-surface-elevated active:scale-95"
+        >
+          <span>Scroll to latest</span>
+          <span className="text-accent text-14">↓</span>
+        </button>
+      )}
 
       {/* Floating composer — visually part of the conversation. */}
       <div className="shrink-0 px-6 pb-6 pt-2 md:px-12">
@@ -255,3 +316,4 @@ export function ChatView({ sessionId }: { sessionId: string }) {
     </div>
   );
 }
+

@@ -126,10 +126,14 @@ function SessionRow({ id, title, active }: { id: string; title: string; active?:
             <DropdownMenuItem onSelect={() => setDialog("archive")}>
               Archive
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setDialog("delete")}>
+            <DropdownMenuItem
+              onSelect={() => setDialog("delete")}
+              className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-950/40 dark:focus:text-red-300"
+            >
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
+
         </DropdownMenu>
       </div>
 

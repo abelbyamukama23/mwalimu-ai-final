@@ -2,6 +2,7 @@
 
 import {
   ArrowRight01Icon,
+  Cancel01Icon,
   Download01Icon,
   FileUploadIcon,
   Folder01Icon,
@@ -9,6 +10,7 @@ import {
   Grid02Icon,
   Home01Icon,
   ListViewIcon,
+  Loading03Icon,
   Search01Icon,
 } from "hugeicons-react";
 import { useMemo, useState } from "react";
@@ -16,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
+import { useUploadLibraryResource } from "@/lib/hooks/use-libraries";
 import { DocumentIcon } from "./document-icon";
 import { ResourceCard } from "./resource-card";
 import { ResourceUploadModal } from "./resource-upload-modal";
@@ -31,6 +35,18 @@ function formatBytes(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
+
+export type UploadingQueueItem = {
+  id: string;
+  name: string;
+  original_filename: string;
+  size: number;
+  resource_type: "pdf" | "docx" | "txt";
+  targetFolder: string;
+  progress: number;
+  status: "uploading" | "indexing" | "error";
+  error?: string;
+};
 
 export function FolderTreeExplorer({
   libraryId,
@@ -48,10 +64,21 @@ export function FolderTreeExplorer({
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [customFolders, setCustomFolders] = useState<string[]>([]);
+  const [uploadingQueue, setUploadingQueue] = useState<UploadingQueueItem[]>([]);
+
+  const uploadMutation = useUploadLibraryResource(libraryId);
+  const toast = useToast();
 
   const activePathString = currentPath.join("/");
 
-  // Compute folder hierarchy from resource names (e.g. "Physics/Chapter 1/Newton.pdf" or "Unit 1/Notes")
+  // Uploading items scoped to the currently opened folder
+  const currentUploadingItems = useMemo(() => {
+    return uploadingQueue.filter(
+      (item) => item.targetFolder === activePathString,
+    );
+  }, [uploadingQueue, activePathString]);
+
+  // Compute folder hierarchy from resource names
   const { currentFolderList, currentFileList } = useMemo(() => {
     const foldersSet = new Set<string>();
     const files: (LibraryResource & { displayName: string })[] = [];
@@ -81,7 +108,6 @@ export function FolderTreeExplorer({
           files.push({ ...res, displayName: parts[0] || name });
         }
       } else {
-        // In subfolder
         const startsWithCurrent = parts
           .slice(0, currentPath.length)
           .every((p, idx) => p.toLowerCase() === currentPath[idx].toLowerCase());
@@ -138,16 +164,103 @@ export function FolderTreeExplorer({
     setNewFolderOpen(false);
   };
 
+  const handleStartUpload = async ({
+    file,
+    name,
+    resourceType,
+    targetFolder,
+  }: {
+    file: File;
+    name: string;
+    resourceType: "pdf" | "docx" | "txt";
+    targetFolder: string;
+  }) => {
+    const uploadId = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const finalName = targetFolder
+      ? `${targetFolder}/${name}`
+      : name;
+
+    const newItem: UploadingQueueItem = {
+      id: uploadId,
+      name: finalName,
+      original_filename: file.name,
+      size: file.size,
+      resource_type: resourceType,
+      targetFolder,
+      progress: 20,
+      status: "uploading",
+    };
+
+    setUploadingQueue((prev) => [newItem, ...prev]);
+
+    // Simulated progress tick while upload transfers
+    const progressInterval = setInterval(() => {
+      setUploadingQueue((prev) =>
+        prev.map((item) => {
+          if (item.id === uploadId && item.status === "uploading") {
+            const nextProgress = Math.min(item.progress + 15, 85);
+            return {
+              ...item,
+              progress: nextProgress,
+              status: nextProgress >= 70 ? "indexing" : "uploading",
+            };
+          }
+          return item;
+        }),
+      );
+    }, 400);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", finalName);
+    formData.append("resource_type", resourceType);
+
+    try {
+      await uploadMutation.mutateAsync(formData);
+      clearInterval(progressInterval);
+
+      // Transition to completed
+      setUploadingQueue((prev) =>
+        prev.map((item) =>
+          item.id === uploadId ? { ...item, progress: 100, status: "indexing" } : item,
+        ),
+      );
+
+      toast(`"${file.name}" uploaded successfully`);
+
+      // Clear from queue after a short delay so user sees 100% completion
+      setTimeout(() => {
+        setUploadingQueue((prev) => prev.filter((item) => item.id !== uploadId));
+      }, 1000);
+    } catch (err: unknown) {
+      clearInterval(progressInterval);
+      const message =
+        err instanceof Error ? err.message : "Failed to upload file.";
+      setUploadingQueue((prev) =>
+        prev.map((item) =>
+          item.id === uploadId
+            ? { ...item, status: "error", error: message }
+            : item,
+        ),
+      );
+      toast(message);
+    }
+  };
+
+  const handleDismissUploadError = (id: string) => {
+    setUploadingQueue((prev) => prev.filter((item) => item.id !== id));
+  };
+
   return (
     <div className="space-y-4">
       {/* Top Toolbar: Breadcrumbs & Controls */}
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* GitHub-style Breadcrumb Navigation */}
+        {/* Breadcrumb Navigation */}
         <div className="flex flex-wrap items-center gap-1.5 text-13 text-ink">
           <button
             type="button"
             onClick={() => handleNavigateToBreadcrumb(-1)}
-            className="flex items-center gap-1 font-semibold text-ink-secondary hover:text-accent focus-ring rounded px-1.5 py-0.5"
+            className="flex items-center gap-1.5 font-semibold text-ink-secondary hover:text-accent focus-ring rounded px-1.5 py-0.5 transition-colors"
           >
             <Home01Icon size={16} className="text-accent" aria-hidden />
             <span>Root</span>
@@ -159,7 +272,7 @@ export function FolderTreeExplorer({
               <button
                 type="button"
                 onClick={() => handleNavigateToBreadcrumb(idx)}
-                className={`rounded px-1.5 py-0.5 hover:text-accent focus-ring ${
+                className={`rounded px-1.5 py-0.5 hover:text-accent focus-ring transition-colors ${
                   idx === currentPath.length - 1
                     ? "font-semibold text-ink"
                     : "text-ink-secondary"
@@ -222,13 +335,13 @@ export function FolderTreeExplorer({
                 size="sm"
                 onClick={() => setNewFolderOpen(true)}
               >
-                <FolderAddIcon size={15} aria-hidden /> New folder
+                <FolderAddIcon size={15} className="text-amber-500" aria-hidden /> New folder
               </Button>
               <Button
                 size="sm"
                 onClick={() => setUploadOpen(true)}
               >
-                <FileUploadIcon size={15} aria-hidden /> Upload
+                <FileUploadIcon size={15} aria-hidden /> Upload here
               </Button>
             </>
           )}
@@ -239,13 +352,13 @@ export function FolderTreeExplorer({
       {newFolderOpen && (
         <form
           onSubmit={handleCreateFolder}
-          className="flex items-center gap-2 rounded-lg border border-accent/40 bg-accent-subtle/20 p-3"
+          className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3"
         >
-          <Folder01Icon size={16} className="text-accent shrink-0" />
+          <Folder01Icon size={18} className="text-amber-500 fill-amber-400/20 shrink-0" />
           <Input
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
-            placeholder="Folder name (e.g. Unit 2 - Dynamics)"
+            placeholder="Folder name (e.g. Biology, Unit 2 - Dynamics)"
             className="h-8 text-13"
             autoFocus
           />
@@ -263,7 +376,7 @@ export function FolderTreeExplorer({
         </form>
       )}
 
-      {/* Folder Items (GitHub Style Table Rows) */}
+      {/* Folder Items (Golden Amber Folder Styling) */}
       {currentFolderList.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="bg-surface-sunken px-4 py-2 text-11 font-semibold uppercase tracking-wider text-ink-tertiary border-b border-border">
@@ -283,13 +396,13 @@ export function FolderTreeExplorer({
                   key={folderName}
                   type="button"
                   onClick={() => handleEnterFolder(folderName)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-surface-hover group focus-ring"
+                  className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-surface-hover group focus-ring cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent-subtle/40 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
-                      <Folder01Icon size={16} />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/20 transition-colors">
+                      <Folder01Icon size={18} className="fill-amber-400/30" />
                     </div>
-                    <span className="text-13 font-semibold text-ink group-hover:text-accent transition-colors">
+                    <span className="text-13 font-semibold text-ink group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
                       {folderName}
                     </span>
                   </div>
@@ -305,8 +418,66 @@ export function FolderTreeExplorer({
         </div>
       )}
 
+      {/* Uploading Queue Progress Cards (Non-blocking with Blue Progress Bar) */}
+      {currentUploadingItems.length > 0 && (
+        <div className="space-y-2">
+          {currentUploadingItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3.5 shadow-2xs dark:border-blue-900/50 dark:bg-blue-950/20"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <DocumentIcon filenameOrType={item.original_filename} size="sm" />
+                  <div className="truncate">
+                    <p className="text-13 font-medium text-ink truncate">
+                      {item.name.split("/").pop()}
+                    </p>
+                    <p className="text-11 text-ink-tertiary">
+                      {formatBytes(item.size)} · {item.resource_type.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {item.status === "error" ? (
+                    <>
+                      <span className="text-11 font-medium text-red-600">Upload failed</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDismissUploadError(item.id)}
+                        className="text-ink-tertiary hover:text-ink focus-ring rounded p-1"
+                        aria-label="Dismiss error"
+                      >
+                        <Cancel01Icon size={14} />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-12 font-medium text-blue-700 dark:text-blue-400">
+                      <Loading03Icon size={13} className="animate-spin" />
+                      <span>{item.status === "uploading" ? "Uploading…" : "Chunking…"}</span>
+                      <span className="font-mono text-11">({item.progress}%)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Blue Progress Bar */}
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-blue-200/60 dark:bg-blue-900/40">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    item.status === "error" ? "bg-red-500" : "bg-blue-600"
+                  }`}
+                  style={{ width: `${item.progress}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Files Section */}
-      {currentFileList.length === 0 && currentFolderList.length === 0 ? (
+      {currentFileList.length === 0 && currentFolderList.length === 0 && currentUploadingItems.length === 0 ? (
         <EmptyState
           icon={Folder01Icon}
           title={
@@ -336,7 +507,7 @@ export function FolderTreeExplorer({
           ))}
         </div>
       ) : currentFileList.length > 0 && viewMode === "table" ? (
-        /* GitHub Style Table / List View */
+        /* Table / List View */
         <div className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="bg-surface-sunken px-4 py-2 text-11 font-semibold uppercase tracking-wider text-ink-tertiary border-b border-border flex items-center justify-between">
             <span>Files ({currentFileList.length})</span>
@@ -397,9 +568,10 @@ export function FolderTreeExplorer({
       <ResourceUploadModal
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        libraryId={libraryId}
         currentFolder={activePathString}
+        onStartUpload={handleStartUpload}
       />
     </div>
   );
 }
+

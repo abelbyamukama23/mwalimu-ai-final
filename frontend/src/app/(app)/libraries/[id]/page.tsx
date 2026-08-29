@@ -545,14 +545,15 @@ export default function LibraryDetailPage() {
                     policies, and external connections.
                   </p>
                   <Button
-                    variant="secondary"
+                    variant="danger"
                     size="sm"
-                    className="mt-3 border-danger/30 text-danger hover:bg-danger-surface"
+                    className="mt-3"
                     onClick={handleDeleteLibrary}
-                    disabled={deleteMutation.isPending}
+                    loading={deleteMutation.isPending}
                   >
                     <Delete02Icon size={14} aria-hidden /> Delete Library
                   </Button>
+
 
 
                 </div>

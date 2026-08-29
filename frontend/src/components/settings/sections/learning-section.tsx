@@ -1,6 +1,8 @@
 "use client";
 
-import { BookOpen01Icon, BulbIcon, CompassIcon } from "hugeicons-react";
+import { BookOpen01Icon, BulbIcon, CheckmarkCircle02Icon, CompassIcon } from "hugeicons-react";
+import { useState } from "react";
+
 import { useToast } from "@/components/ui/toast";
 
 import {
@@ -55,11 +57,20 @@ export function LearningSection() {
   const { data: preferences, isLoading } = useUserPreferences();
   const updatePreferences = useUpdateUserPreferences();
   const toast = useToast();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const triggerSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    toast(msg);
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 4000);
+  };
 
   const handleStyleChange = async (style: PedagogicalStyle) => {
     try {
       await updatePreferences.mutateAsync({ pedagogical_style: style });
-      toast("Pedagogical style updated");
+      triggerSuccess("Learning methodology style updated successfully");
     } catch {
       toast("Failed to update learning preferences.");
     }
@@ -68,7 +79,7 @@ export function LearningSection() {
   const handleDepthChange = async (depth: ExplanationDepth) => {
     try {
       await updatePreferences.mutateAsync({ explanation_depth: depth });
-      toast("Explanation depth updated");
+      triggerSuccess("Explanation depth updated successfully");
     } catch {
       toast("Failed to update learning preferences.");
     }
@@ -77,7 +88,7 @@ export function LearningSection() {
   const handleMemoryToggle = async (checked: boolean) => {
     try {
       await updatePreferences.mutateAsync({ cross_session_memory: checked });
-      toast(checked ? "Cross-session memory enabled" : "Cross-session memory disabled");
+      triggerSuccess(checked ? "Cross-session memory enabled" : "Cross-session memory disabled");
     } catch {
       toast("Failed to update memory preference.");
     }
@@ -103,6 +114,18 @@ export function LearningSection() {
           Configure how Mwalimu explains concepts and structures answers during chat sessions.
         </p>
       </div>
+
+      {/* Positive Green Success Message Banner */}
+      {successMessage && (
+        <div
+          role="status"
+          className="flex items-center gap-2.5 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-13 font-medium text-emerald-800 shadow-2xs dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 animate-in fade-in"
+        >
+          <CheckmarkCircle02Icon size={18} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
 
       <div className="space-y-6 rounded-lg border border-border bg-surface p-6">
         {/* Style selection */}

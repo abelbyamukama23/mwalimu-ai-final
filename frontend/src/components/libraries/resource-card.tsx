@@ -161,14 +161,14 @@ export function ResourceCard({
           </p>
           <div className="flex items-center gap-2">
             <Button
-              variant="primary"
-              className="bg-danger hover:bg-danger/90 text-white border-transparent"
+              variant="danger"
               size="sm"
               onClick={handleDelete}
-              disabled={deleteMutation.isPending}
+              loading={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? "Deleting…" : "Confirm Delete"}
             </Button>
+
             <Button
               variant="secondary"
               size="sm"
