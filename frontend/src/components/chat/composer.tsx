@@ -115,7 +115,7 @@ export const Composer = forwardRef<
           <button
             onClick={onStop}
             aria-label="Stop generating"
-            className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors duration-150 hover:bg-accent-hover"
+            className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta text-cta-fg shadow-xs transition-all duration-150 active:scale-95 hover:bg-cta-hover"
           >
             <StopIcon size={16} aria-hidden />
           </button>
@@ -125,15 +125,16 @@ export const Composer = forwardRef<
             disabled={!canSend}
             aria-label="Send message"
             className={cn(
-              "focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-150",
+              "focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-150",
               canSend
-                ? "bg-accent text-white hover:bg-accent-hover"
+                ? "bg-cta text-cta-fg shadow-xs active:scale-95 hover:bg-cta-hover"
                 : "cursor-not-allowed bg-subtle text-ink-tertiary",
             )}
           >
             <ArrowUp02Icon size={18} aria-hidden />
           </button>
         )}
+
         </div>
       </div>
     </div>

@@ -3,14 +3,16 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors duration-150 focus-ring disabled:cursor-not-allowed disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-150 focus-ring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
   {
     variants: {
       variant: {
-        primary: "bg-accent text-white hover:bg-accent-hover",
+        primary: "bg-cta text-cta-fg hover:bg-cta-hover shadow-xs",
         secondary:
-          "border border-border bg-surface text-ink hover:bg-subtle",
-        ghost: "text-accent hover:bg-accent-subtle",
+          "border border-border bg-surface text-ink hover:bg-subtle shadow-xs",
+        ghost: "text-ink-secondary hover:text-ink hover:bg-subtle",
+        accent: "bg-accent text-white hover:bg-accent-hover shadow-xs",
+        terracotta: "bg-terracotta text-white hover:bg-terracotta/90 shadow-xs",
       },
       size: {
         sm: "h-8 px-3 text-13",
@@ -21,6 +23,7 @@ const buttonVariants = cva(
     defaultVariants: { variant: "primary", size: "md" },
   },
 );
+
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants>;

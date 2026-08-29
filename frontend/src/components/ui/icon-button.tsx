@@ -3,12 +3,13 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 const iconButtonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-ring disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex shrink-0 items-center justify-center rounded-full transition-all duration-150 focus-ring active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100",
   {
     variants: {
       variant: {
-        primary: "bg-accent text-white hover:bg-accent-hover",
+        primary: "bg-cta text-cta-fg hover:bg-cta-hover shadow-xs",
         ghost: "text-ink-tertiary hover:bg-subtle hover:text-ink-secondary",
+        accent: "bg-accent text-white hover:bg-accent-hover shadow-xs",
       },
       size: {
         sm: "h-7 w-7",
@@ -18,6 +19,7 @@ const iconButtonVariants = cva(
     defaultVariants: { variant: "ghost", size: "md" },
   },
 );
+
 
 export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof iconButtonVariants> & {
