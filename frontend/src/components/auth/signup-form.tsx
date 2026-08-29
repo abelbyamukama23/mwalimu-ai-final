@@ -2,19 +2,21 @@
 
 import { useState } from "react";
 import { ViewIcon, ViewOffIcon } from "hugeicons-react";
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import { isValidEmail } from "@/lib/auth/email";
 
 /**
- * Account creation form: Email + Password + Confirm Password.
+ * Account creation form: Google Signup + Email + Password + Confirm Password.
  */
 export function SignupForm({
   email,
   onChangeEmail,
   onLogin,
   onSubmit,
+  onGoogleSignup,
   submitting,
   error,
 }: {
@@ -22,6 +24,7 @@ export function SignupForm({
   onChangeEmail: (email: string) => void;
   onLogin: () => void;
   onSubmit: (email: string, password: string, confirm: string) => void;
+  onGoogleSignup?: () => void;
   submitting: boolean;
   error: string | null;
 }) {
@@ -34,13 +37,34 @@ export function SignupForm({
   const canSubmit = isValidEmail(email) && passwordValid;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {onGoogleSignup && (
+        <>
+          <button
+            type="button"
+            onClick={onGoogleSignup}
+            disabled={submitting}
+            className="focus-ring flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-surface px-4 text-13 font-medium text-ink transition-colors duration-150 hover:bg-surface-elevated hover:border-border-strong disabled:opacity-60"
+          >
+            <BrandIcon name="google" size={16} />
+            <span>Continue with Google</span>
+          </button>
+
+          <div className="relative flex items-center justify-center">
+            <div className="w-full border-t border-border" />
+            <span className="absolute bg-surface px-2.5 text-11 uppercase tracking-wider text-ink-tertiary">
+              or
+            </span>
+          </div>
+        </>
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (canSubmit && !submitting) onSubmit(email, password, confirm);
         }}
-        className="space-y-4"
+        className="space-y-3.5"
       >
         <div>
           <label
@@ -59,6 +83,8 @@ export function SignupForm({
             placeholder="you@example.com"
             value={email}
             onChange={(e) => onChangeEmail(e.target.value)}
+            disabled={submitting}
+            className="text-13"
           />
         </div>
 
@@ -78,7 +104,8 @@ export function SignupForm({
               placeholder="Create a password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pr-11"
+              disabled={submitting}
+              className="pr-11 text-13"
             />
             <IconButton
               type="button"
@@ -108,7 +135,8 @@ export function SignupForm({
               placeholder="Repeat your password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="pr-11"
+              disabled={submitting}
+              className="pr-11 text-13"
             />
             <IconButton
               type="button"
@@ -123,7 +151,7 @@ export function SignupForm({
         </div>
 
         {error && (
-          <p role="alert" className="rounded-sm bg-red-50 px-3 py-2 text-12 text-red-700">
+          <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-12 font-medium text-red-700">
             {error}
           </p>
         )}
@@ -133,7 +161,7 @@ export function SignupForm({
         </Button>
       </form>
 
-      <p className="text-center text-13 text-ink-secondary">
+      <p className="pt-1 text-center text-13 text-ink-secondary">
         Already have an account?{" "}
         <button
           type="button"

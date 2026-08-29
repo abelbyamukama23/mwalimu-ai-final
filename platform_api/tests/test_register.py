@@ -1,17 +1,19 @@
 """Tests for the registration endpoint (POST /api/v1/auth/register/).
 
 Contract under test:
-- Registration creates a user and returns `{access, user}` plus an HttpOnly
-  refresh cookie, so signup doubles as account creation + sign-in.
+- Registration creates an unverified user account (`is_email_verified=False`),
+  generates a 6-digit OTP, dispatches the email, and returns
+  `{email, requires_verification, message}`.
 - Duplicate emails, invalid emails, weak/mismatched passwords, and missing
   password confirmation are rejected.
+
 - The email is normalized, the password is hashed, the double-submit CSRF cookie
-  is established (so refresh/logout work right after sign-up), and registration
-  never creates institution membership or privilege.
+  is established, and registration never creates institution membership or privilege.
 """
 
+from unittest.mock import patch
+
 import pytest
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
@@ -31,32 +33,25 @@ CREDENTIALS = {
 
 
 @pytest.mark.django_db
-def test_register_creates_user_and_establishes_session(api_client: APIClient) -> None:
+@patch("platform_api.apps.users.services.email_service.send_verification_otp_email")
+def test_register_creates_unverified_user_and_dispatches_otp(
+    mock_send_email,
+    api_client: APIClient,
+) -> None:
     response = api_client.post(REGISTER_URL, CREDENTIALS, format="json")
 
     assert response.status_code == status.HTTP_201_CREATED
-    assert "access" in response.data
-    assert "user" in response.data
-    assert response.data["user"]["email"] == "new.user@example.com"
-    assert "refresh" not in response.data
-    assert "password" not in response.data["user"]
+    assert response.data["email"] == "new.user@example.com"
+    assert response.data["requires_verification"] is True
 
     user = get_user_model().objects.get(email="new.user@example.com")
     assert user.check_password(CREDENTIALS["password"])
     assert user.is_active is True
+    assert user.is_email_verified is False
     assert user.is_staff is False
     assert user.is_superuser is False
 
-
-@pytest.mark.django_db
-def test_register_sets_refresh_cookie(api_client: APIClient) -> None:
-    response = api_client.post(REGISTER_URL, CREDENTIALS, format="json")
-
-    morsel = response.cookies.get(settings.REFRESH_COOKIE_NAME)
-    assert morsel is not None
-    output = morsel.output().lower()
-    assert "httponly" in output
-    assert "samesite=lax" in output
+    mock_send_email.assert_called_once()
 
 
 @pytest.mark.django_db

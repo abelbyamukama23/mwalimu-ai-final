@@ -11,10 +11,11 @@ from agent_service.run import AgentRun  # noqa: F401
 
 
 def test_python_version() -> None:
-    """Python 3.13 is required."""
+    """Python 3.13+ is supported."""
     import sys
 
-    assert sys.version_info[:2] == (3, 13)
+    assert sys.version_info[:2] in ((3, 13), (3, 14))
+
 
 
 def test_fastapi_import() -> None:

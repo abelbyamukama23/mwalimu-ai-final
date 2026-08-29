@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { ViewIcon, ViewOffIcon } from "hugeicons-react";
 
+import { BrandIcon } from "@/components/ui/brand-icon";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import { isValidEmail } from "@/lib/auth/email";
 
 /**
- * Direct single-screen login form: Email + Password with instant sign-in.
+ * Direct single-screen login form: Google Login + Email + Password.
  */
 export function LoginForm({
   email,
@@ -17,6 +18,7 @@ export function LoginForm({
   onForgot,
   onSignup,
   onSubmit,
+  onGoogleLogin,
   submitting,
   error,
 }: {
@@ -25,6 +27,7 @@ export function LoginForm({
   onForgot: () => void;
   onSignup: () => void;
   onSubmit: (email: string, password: string) => void;
+  onGoogleLogin?: () => void;
   submitting: boolean;
   error: string | null;
 }) {
@@ -34,13 +37,34 @@ export function LoginForm({
   const canSubmit = isValidEmail(email) && password.length > 0 && !submitting;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {onGoogleLogin && (
+        <>
+          <button
+            type="button"
+            onClick={onGoogleLogin}
+            disabled={submitting}
+            className="focus-ring flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-surface px-4 text-13 font-medium text-ink transition-colors duration-150 hover:bg-surface-elevated hover:border-border-strong disabled:opacity-60"
+          >
+            <BrandIcon name="google" size={16} />
+            <span>Continue with Google</span>
+          </button>
+
+          <div className="relative flex items-center justify-center">
+            <div className="w-full border-t border-border" />
+            <span className="absolute bg-surface px-2.5 text-11 uppercase tracking-wider text-ink-tertiary">
+              or
+            </span>
+          </div>
+        </>
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (canSubmit) onSubmit(email, password);
         }}
-        className="space-y-4"
+        className="space-y-3.5"
       >
         <div>
           <label
@@ -59,6 +83,8 @@ export function LoginForm({
             placeholder="you@example.com"
             value={email}
             onChange={(e) => onChangeEmail(e.target.value)}
+            disabled={submitting}
+            className="text-13"
           />
         </div>
 
@@ -88,7 +114,8 @@ export function LoginForm({
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pr-11"
+              disabled={submitting}
+              className="pr-11 text-13"
             />
             <IconButton
               type="button"
@@ -103,7 +130,7 @@ export function LoginForm({
         </div>
 
         {error && (
-          <p role="alert" className="rounded-sm bg-red-50 px-3 py-2 text-12 text-red-700">
+          <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-12 font-medium text-red-700">
             {error}
           </p>
         )}
@@ -113,7 +140,7 @@ export function LoginForm({
         </Button>
       </form>
 
-      <p className="text-center text-13 text-ink-secondary">
+      <p className="pt-1 text-center text-13 text-ink-secondary">
         New to Mwalimu?{" "}
         <button
           type="button"

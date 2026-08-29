@@ -1,4 +1,4 @@
-"""User model and manager for the Mwalimu Platform API."""
+"""User model, Email OTP, and profile manager for the Mwalimu Platform API."""
 
 from __future__ import annotations
 
@@ -50,6 +50,7 @@ class UserManager(BaseUserManager):  # type: ignore[type-arg]
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("is_email_verified", True)
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superusers must have is_staff=True.")
@@ -64,6 +65,17 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, db_index=True)
+
+    is_email_verified = models.BooleanField(default=False)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
+    google_sub = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+        db_index=True,
+        help_text="Google OAuth stable subject identifier (sub).",
+    )
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -93,6 +105,60 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Normalize the email address before validation."""
         super().clean()
         self.email = self.email.strip().lower() if self.email else ""
+
+
+class EmailOTPPurpose(models.TextChoices):
+    """Supported purposes for one-time verification codes."""
+
+    EMAIL_VERIFICATION = "email_verification", "Email Verification"
+    PASSWORD_RESET = "password_reset", "Password Reset"
+
+
+class EmailOTP(models.Model):
+    """Cryptographically hashed One-Time Password record."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="email_otps",
+        null=True,
+        blank=True,
+    )
+    email = models.EmailField(db_index=True)
+    otp_hash = models.CharField(
+        max_length=128, help_text="Cryptographic SHA-256 hash of the 6-digit OTP."
+    )
+    purpose = models.CharField(
+        max_length=32,
+        choices=EmailOTPPurpose.choices,
+        default=EmailOTPPurpose.EMAIL_VERIFICATION,
+        db_index=True,
+    )
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(
+        default=0, help_text="Failed verification attempts (max 5)."
+    )
+    resend_available_at = models.DateTimeField(
+        help_text="Timestamp when next OTP request is allowed (60s cooldown)."
+    )
+    is_used = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        """Model metadata."""
+
+        db_table = "users_email_otp"
+        ordering = ["-created_at"]
+        verbose_name = "email OTP"
+        verbose_name_plural = "email OTPs"
+        indexes = [
+            models.Index(fields=["email", "purpose", "is_used"]),
+        ]
+
+    def __str__(self) -> str:
+        """Safe string representation without exposing OTP."""
+        return f"OTP({self.email}, {self.purpose}, used={self.is_used})"
 
 
 class UserProfile(models.Model):
@@ -203,4 +269,3 @@ class UserPreference(models.Model):
     def __str__(self) -> str:
         """Return string representation."""
         return f"Preferences for {self.user}"
-

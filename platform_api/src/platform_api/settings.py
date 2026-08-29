@@ -232,14 +232,16 @@ REFRESH_COOKIE_HTTPONLY = os.getenv("REFRESH_COOKIE_HTTPONLY", "True").lower() i
     "1",
     "yes",
 )
-REFRESH_COOKIE_SECURE = os.getenv("REFRESH_COOKIE_SECURE", "True").lower() in (
+REFRESH_COOKIE_SECURE = os.getenv(
+    "REFRESH_COOKIE_SECURE", "False" if DEBUG else "True"
+).lower() in (
     "true",
     "1",
     "yes",
 )
 REFRESH_COOKIE_SAMESITE = os.getenv(
     "REFRESH_COOKIE_SAMESITE",
-    "None" if REFRESH_COOKIE_SECURE else "Lax",
+    "None" if (REFRESH_COOKIE_SECURE and not DEBUG) else "Lax",
 )
 REFRESH_COOKIE_MAX_AGE = int(timedelta(days=7).total_seconds())
 
@@ -275,6 +277,13 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 NOTION_CLIENT_ID = os.getenv("NOTION_CLIENT_ID", "")
 NOTION_CLIENT_SECRET = os.getenv("NOTION_CLIENT_SECRET", "")
+
+# Transactional Email configuration (Resend)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "Mwalimu <onboarding@resend.dev>")
+EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Mwalimu")
+FRONTEND_PUBLIC_URL = os.getenv("FRONTEND_PUBLIC_URL", "http://localhost:3000")
+
 
 CELERY_TASK_DEFAULT_QUEUE = "default"
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1

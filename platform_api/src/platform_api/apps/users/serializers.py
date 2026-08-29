@@ -10,7 +10,7 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 
-from .models import UserPreference, UserProfile
+from .models import EmailOTPPurpose, UserPreference, UserProfile
 
 User = get_user_model()
 
@@ -66,6 +66,7 @@ class UserSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
             "id",
             "email",
             "is_active",
+            "is_email_verified",
             "profile",
             "created_at",
             "updated_at",
@@ -74,6 +75,7 @@ class UserSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
             "id",
             "email",
             "is_active",
+            "is_email_verified",
             "profile",
             "created_at",
             "updated_at",
@@ -81,12 +83,7 @@ class UserSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
 
 
 class RegisterSerializer(serializers.Serializer):  # type: ignore[type-arg]
-    """Create a new user account from email, password, and password confirmation.
-
-    ``email`` is normalized (trimmed/lowercased) and checked for uniqueness. The
-    password is validated against ``AUTH_PASSWORD_VALIDATORS`` and must match
-    ``password_confirm`` so a typo can never silently create an account.
-    """
+    """Create a new unverified user account from email and password."""
 
     email = serializers.EmailField()
     password = serializers.CharField(
@@ -123,12 +120,119 @@ class RegisterSerializer(serializers.Serializer):  # type: ignore[type-arg]
         return attrs
 
     def create(self, validated_data: dict[str, Any]) -> Any:
-        """Create the user with a hashed password."""
+        """Create the user with is_email_verified=False."""
         validated_data.pop("password_confirm", None)
         return User.objects.create_user(
             email=validated_data["email"],
             password=validated_data["password"],
+            is_email_verified=False,
         )
+
+
+class VerifyEmailSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Validate 6-digit OTP to verify user email address."""
+
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+    display_name = serializers.CharField(
+        max_length=150,
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="Optional display name chosen by the learner during onboarding.",
+    )
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
+    def validate_otp(self, value: str) -> str:
+        clean = value.strip()
+        if not clean.isdigit() or len(clean) != 6:
+            raise serializers.ValidationError(
+                "Verification code must be exactly 6 digits."
+            )
+        return clean
+
+
+class ResendOtpSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Request a new OTP with 60-second cooldown enforcement."""
+
+    email = serializers.EmailField()
+    purpose = serializers.ChoiceField(
+        choices=EmailOTPPurpose.choices,
+        default=EmailOTPPurpose.EMAIL_VERIFICATION,
+    )
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Request a password reset OTP. Always responds neutrally."""
+
+    email = serializers.EmailField()
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Validate reset OTP and set new account password."""
+
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+    new_password = serializers.CharField(
+        write_only=True,
+        style={"input_type": "password"},
+        max_length=128,
+    )
+    new_password_confirm = serializers.CharField(
+        write_only=True,
+        style={"input_type": "password"},
+        max_length=128,
+    )
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
+    def validate_otp(self, value: str) -> str:
+        clean = value.strip()
+        if not clean.isdigit() or len(clean) != 6:
+            raise serializers.ValidationError("Reset code must be exactly 6 digits.")
+        return clean
+
+    def validate_new_password(self, value: str) -> str:
+        validate_password(value)
+        return value
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if attrs.get("new_password") != attrs.get("new_password_confirm"):
+            raise serializers.ValidationError(
+                {"new_password_confirm": "The two password fields didn't match."},
+            )
+        return attrs
+
+
+class GoogleAuthUrlSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Request Google OAuth authorization URL."""
+
+    redirect_uri = serializers.URLField(
+        required=False,
+        allow_blank=True,
+        help_text="Frontend callback URL for OAuth redirect.",
+    )
+
+
+class GoogleAuthCallbackSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Exchange authorization code and state for authenticated session."""
+
+    code = serializers.CharField()
+    state = serializers.CharField()
+    redirect_uri = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+    )
 
 
 class LoginAccessSerializer(TokenObtainPairSerializer):
@@ -136,21 +240,20 @@ class LoginAccessSerializer(TokenObtainPairSerializer):
 
 
 class CookieTokenRefreshSerializer(TokenRefreshSerializer):
-    """Refresh the access token using either the request body or the HttpOnly refresh cookie."""
+    """Refresh the access token using HttpOnly cookie (ignoring body token)."""
 
-    refresh = serializers.CharField(required=False, allow_null=True)
+
+    refresh = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         request = self.context.get("request")
-        body_refresh = attrs.get("refresh")
         cookie_refresh = (
             request.COOKIES.get(settings.REFRESH_COOKIE_NAME) if request else None
         )
-        refresh_token = body_refresh or cookie_refresh
-        if not refresh_token:
-            raise InvalidToken("Refresh token is missing (neither in body nor in cookie).")
+        if not cookie_refresh:
+            raise InvalidToken("Refresh token is missing from cookie.")
 
-        refresh = self.token_class(refresh_token)
+        refresh = self.token_class(cookie_refresh)
         data = {"access": str(refresh.access_token)}
         if getattr(settings, "ROTATE_REFRESH_TOKENS", False):
             refresh.set_jti()
@@ -158,4 +261,3 @@ class CookieTokenRefreshSerializer(TokenRefreshSerializer):
             refresh.set_iat()
             data["refresh"] = str(refresh)
         return data
-

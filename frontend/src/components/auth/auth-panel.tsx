@@ -2,13 +2,15 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ForgotPasswordView } from "@/components/auth/forgot-password-view";
 import { LoginForm } from "@/components/auth/login-form";
+import { OtpVerificationView } from "@/components/auth/otp-verification-view";
 import { SignupForm } from "@/components/auth/signup-form";
 import { useAuth } from "@/components/auth/auth-provider";
-import { register } from "@/lib/api/auth";
-import { Button } from "@/components/ui/button";
+import { getGoogleAuthUrl, register, resendOtp, verifyEmail } from "@/lib/api/auth";
 import { normalizeEmail } from "@/lib/auth/email";
+import { setAccess } from "@/lib/auth/token-store";
 
 export type AuthMode = "page" | "modal";
 
@@ -17,9 +19,10 @@ export type AuthInitialView = "login" | "signup";
 type AuthView =
   | { kind: "login" }
   | { kind: "signup" }
+  | { kind: "verify_email"; email: string }
   | { kind: "forgot" };
 
-/** Unified direct authentication panel (Single-screen Email + Password login). */
+/** Unified direct authentication panel with Google, 6-digit OTP, and Password Reset. */
 export function AuthPanel({
   mode,
   onSuccess,
@@ -44,6 +47,26 @@ export function AuthPanel({
   const [email, setEmail] = useState(normalizeEmail(initialEmail));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Listen for Google OAuth popup messages
+  useEffect(() => {
+    const handleOAuthMessage = (event: MessageEvent) => {
+      if (event.data?.type === "MWALIMU_GOOGLE_AUTH_SUCCESS") {
+        const { access } = event.data;
+        if (access) {
+          setAccess(access);
+          if (mode === "page") {
+            router.replace(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/chat/new");
+            router.refresh();
+          } else {
+            onSuccess?.();
+          }
+        }
+      }
+    };
+    window.addEventListener("message", handleOAuthMessage);
+    return () => window.removeEventListener("message", handleOAuthMessage);
+  }, [mode, onSuccess, redirectTo, router]);
 
   const handleLogin = async (loginEmail: string, password: string) => {
     const normalized = normalizeEmail(loginEmail);
@@ -80,8 +103,19 @@ export function AuthPanel({
     setError(null);
     setSubmitting(true);
     try {
-      await register(normalized, password, confirm);
-      await login(normalized, password);
+      const result = await register(normalized, password, confirm);
+      setSubmitting(false);
+      if (result.requires_verification) {
+        setView({ kind: "verify_email", email: normalized });
+      } else {
+        await login(normalized, password);
+        if (mode === "page") {
+          router.replace(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/chat/new");
+          router.refresh();
+        } else {
+          onSuccess?.();
+        }
+      }
     } catch (err) {
       setSubmitting(false);
       setError(
@@ -89,14 +123,56 @@ export function AuthPanel({
           ? err.message
           : "Account creation failed. Please try again.",
       );
-      return;
     }
-    setSubmitting(false);
-    if (mode === "page") {
-      router.replace(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/chat/new");
-      router.refresh();
-    } else {
-      onSuccess?.();
+  };
+
+  const handleVerifyEmail = async (otp: string, displayName?: string) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await verifyEmail(email, otp, displayName);
+      setAccess(result.access);
+      setSubmitting(false);
+      if (mode === "page") {
+        router.replace(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/chat/new");
+        router.refresh();
+      } else {
+        onSuccess?.();
+      }
+    } catch (err) {
+      setSubmitting(false);
+      setError(
+        err instanceof Error && err.message.length > 0
+          ? err.message
+          : "That verification code isn't correct. Please try again.",
+      );
+      throw err;
+    }
+  };
+
+  const handleResendOtp = async () => {
+    await resendOtp(email, "email_verification");
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const callbackUrl = `${window.location.origin}/auth/google/callback`;
+      const { url } = await getGoogleAuthUrl(callbackUrl);
+
+      // Open popup for seamless OAuth experience
+      const width = 540;
+      const height = 640;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      window.open(
+        url,
+        "GoogleSignIn",
+        `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to initiate Google sign-in.",
+      );
     }
   };
 
@@ -106,15 +182,19 @@ export function AuthPanel({
   switch (view.kind) {
     case "login":
       title = "Log in";
-      subtitle = "Enter your email and password to access your learning workspace.";
+      subtitle = "Access your personalized learning workspace and course materials.";
       break;
     case "signup":
       title = "Create your account";
       subtitle = "Join Mwalimu to explore personalized AI tutors and shared libraries.";
       break;
+    case "verify_email":
+      title = "Check your email";
+      subtitle = "We sent a 6-digit verification code to confirm your email address.";
+      break;
     case "forgot":
       title = "Reset password";
-      subtitle = "Password recovery instructions will be provided here.";
+      subtitle = "Recover access to your Mwalimu account using a 6-digit code.";
       break;
   }
 
@@ -151,13 +231,20 @@ export function AuthPanel({
           }}
           onLogin={handleLogin}
           onSignup={handleSignup}
+          onVerifyEmail={handleVerifyEmail}
+          onResendOtp={handleResendOtp}
+          onGoogleLogin={handleGoogleLogin}
           onBackToLogin={() => {
             setError(null);
             setView({ kind: "login" });
           }}
+          onBackToSignup={() => {
+            setError(null);
+            setView({ kind: "signup" });
+          }}
         />
 
-        {mode === "page" && (
+        {mode === "page" && view.kind !== "verify_email" && (
           <p className="mt-6 text-center text-12 leading-relaxed text-ink-tertiary">
             Mwalimu works without an institution — discover and join institutions later to
             unlock shared resources.
@@ -178,7 +265,11 @@ function AuthBody({
   onToSignup,
   onLogin,
   onSignup,
+  onVerifyEmail,
+  onResendOtp,
+  onGoogleLogin,
   onBackToLogin,
+  onBackToSignup,
 }: {
   email: string;
   onChangeEmail: (email: string) => void;
@@ -189,7 +280,11 @@ function AuthBody({
   onToSignup: () => void;
   onLogin: (email: string, password: string) => void;
   onSignup: (email: string, password: string, confirm: string) => void;
+  onVerifyEmail: (otp: string, displayName?: string) => Promise<void>;
+  onResendOtp: () => Promise<void>;
+  onGoogleLogin: () => void;
   onBackToLogin: () => void;
+  onBackToSignup: () => void;
 }) {
   switch (view.kind) {
     case "login":
@@ -200,6 +295,7 @@ function AuthBody({
           onForgot={onForgot}
           onSignup={onToSignup}
           onSubmit={onLogin}
+          onGoogleLogin={onGoogleLogin}
           submitting={submitting}
           error={error}
         />
@@ -211,20 +307,28 @@ function AuthBody({
           onChangeEmail={onChangeEmail}
           onLogin={onBackToLogin}
           onSubmit={onSignup}
+          onGoogleSignup={onGoogleLogin}
+          submitting={submitting}
+          error={error}
+        />
+      );
+    case "verify_email":
+      return (
+        <OtpVerificationView
+          email={view.email || email}
+          onVerify={onVerifyEmail}
+          onResend={onResendOtp}
+          onBack={onBackToSignup}
           submitting={submitting}
           error={error}
         />
       );
     case "forgot":
       return (
-        <div className="space-y-5">
-          <p className="text-13 leading-relaxed text-ink-secondary">
-            Self-service password recovery will be available in an upcoming update. Please contact your institution administrator if you need your password reset.
-          </p>
-          <Button variant="secondary" className="w-full" onClick={onBackToLogin}>
-            Back to log in
-          </Button>
-        </div>
+        <ForgotPasswordView
+          initialEmail={email}
+          onBackToLogin={onBackToLogin}
+        />
       );
     default:
       return null;
