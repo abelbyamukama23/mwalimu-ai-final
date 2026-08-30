@@ -38,7 +38,7 @@ export function AuthPanel({
   redirectTo?: string;
 }) {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, setSession } = useAuth();
 
   const [view, setView] = useState<AuthView>(() => {
     if (initialView === "signup") return { kind: "signup" };
@@ -50,11 +50,11 @@ export function AuthPanel({
 
   // Listen for Google OAuth popup messages
   useEffect(() => {
-    const handleOAuthMessage = (event: MessageEvent) => {
+    const handleOAuthMessage = async (event: MessageEvent) => {
       if (event.data?.type === "MWALIMU_GOOGLE_AUTH_SUCCESS") {
-        const { access } = event.data;
+        const { access, user } = event.data;
         if (access) {
-          setAccess(access);
+          await setSession(access, user ?? null);
           if (mode === "page") {
             router.replace(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/chat/new");
             router.refresh();
@@ -66,7 +66,8 @@ export function AuthPanel({
     };
     window.addEventListener("message", handleOAuthMessage);
     return () => window.removeEventListener("message", handleOAuthMessage);
-  }, [mode, onSuccess, redirectTo, router]);
+  }, [mode, onSuccess, redirectTo, router, setSession]);
+
 
   const handleLogin = async (loginEmail: string, password: string) => {
     const normalized = normalizeEmail(loginEmail);
@@ -131,7 +132,7 @@ export function AuthPanel({
     setError(null);
     try {
       const result = await verifyEmail(email, otp, displayName);
-      setAccess(result.access);
+      await setSession(result.access, result.user ?? null);
       setSubmitting(false);
       if (mode === "page") {
         router.replace(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/chat/new");
@@ -140,6 +141,7 @@ export function AuthPanel({
         onSuccess?.();
       }
     } catch (err) {
+
       setSubmitting(false);
       setError(
         err instanceof Error && err.message.length > 0

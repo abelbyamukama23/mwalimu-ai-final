@@ -3,13 +3,14 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loading03Icon } from "hugeicons-react";
+import { useAuth } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
 import { googleAuthCallback } from "@/lib/api/auth";
-import { setAccess } from "@/lib/auth/token-store";
 
 function GoogleCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setSession } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,24 +33,27 @@ function GoogleCallbackContent() {
         const redirectUri = `${window.location.origin}/auth/google/callback`;
         const result = await googleAuthCallback(code, state, redirectUri);
 
-        setAccess(result.access);
+        await setSession(result.access, result.user ?? null);
+
         if (window.opener && !window.opener.closed) {
           try {
             window.opener.postMessage(
               {
                 type: "MWALIMU_GOOGLE_AUTH_SUCCESS",
                 access: result.access,
+                user: result.user ?? null,
               },
               window.location.origin,
             );
             window.close();
           } catch {
             router.replace("/chat/new");
+            router.refresh();
           }
         } else {
           router.replace("/chat/new");
+          router.refresh();
         }
-
       } catch (err) {
         setError(
           err instanceof Error
@@ -58,6 +62,7 @@ function GoogleCallbackContent() {
         );
       }
     };
+
 
     void completeOAuth();
   }, [router, searchParams]);

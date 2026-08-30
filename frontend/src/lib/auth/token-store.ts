@@ -12,9 +12,14 @@ let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
 let authExpiredHandler: (() => void) | null = null;
+let tokenChangeHandler: ((token: string | null) => void) | null = null;
 
 export function setAuthExpiredHandler(fn: (() => void) | null) {
   authExpiredHandler = fn;
+}
+
+export function setTokenChangeHandler(fn: ((token: string | null) => void) | null) {
+  tokenChangeHandler = fn;
 }
 
 /** Called when the session is definitively invalid (refresh rejected/expired). */
@@ -30,6 +35,7 @@ export function setAccess(token: string) {
       localStorage.setItem(ACCESS_KEY, token);
     } catch {}
   }
+  tokenChangeHandler?.(token);
 }
 
 export function getAccess(): string | null {
@@ -70,7 +76,9 @@ export function clearTokens() {
       localStorage.removeItem(REFRESH_KEY);
     } catch {}
   }
+  tokenChangeHandler?.(null);
 }
+
 
 /** Read the non-HttpOnly double-submit CSRF token cookie. */
 export function getCsrfToken(): string | null {

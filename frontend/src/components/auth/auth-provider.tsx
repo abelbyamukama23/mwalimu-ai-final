@@ -20,7 +20,9 @@ import {
   setAccess,
   setAuthExpiredHandler,
   setRefreshToken,
+  setTokenChangeHandler,
 } from "@/lib/auth/token-store";
+
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -28,6 +30,8 @@ type AuthContextValue = {
   user: User | null;
   status: AuthStatus;
   login: (email: string, password: string) => Promise<void>;
+  setSession: (access: string, user?: User | null) => Promise<void>;
+  refreshSession: () => Promise<void>;
   logout: () => void;
 };
 
@@ -75,29 +79,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.replace("/login");
   }, [router]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await apiLogin(email, password);
-    setAccess(result.access);
-    if (result.refresh) {
-      setRefreshToken(result.refresh);
+  const setSession = useCallback(
+    async (accessToken: string, initialUser?: User | null) => {
+      setAccess(accessToken);
+      setStatus("authenticated");
+      if (initialUser) {
+        setUser(initialUser);
+      } else {
+        try {
+          setUser(await apiMe());
+        } catch {
+          setUser(null);
+        }
+      }
+      scheduleProactiveRefresh();
+    },
+    [scheduleProactiveRefresh],
+  );
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const result = await apiLogin(email, password);
+      if (result.refresh) {
+        setRefreshToken(result.refresh);
+      }
+      await setSession(result.access, result.user ?? null);
+    },
+    [setSession],
+  );
+
+  const refreshSession = useCallback(async () => {
+    const access = getAccess();
+    if (access) {
+      try {
+        const currentUser = await apiMe();
+        setUser(currentUser);
+        setStatus("authenticated");
+        scheduleProactiveRefresh();
+        return;
+      } catch {}
     }
-    setStatus("authenticated");
-    try {
-      setUser(await apiMe());
-    } catch {
-      // Session is valid (access issued) even if the profile fetch hiccups.
-      setUser(null);
+    const refreshed = await singleFlightRefresh();
+    if (refreshed) {
+      try {
+        const currentUser = await apiMe();
+        setUser(currentUser);
+        setStatus("authenticated");
+        scheduleProactiveRefresh();
+        return;
+      } catch {}
     }
-    scheduleProactiveRefresh();
+    clearTokens();
+    setUser(null);
+    setStatus("unauthenticated");
   }, [scheduleProactiveRefresh]);
 
   useEffect(() => {
     let cancelled = false;
+
     setAuthExpiredHandler(() => {
       if (cancelled) return;
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
       setUser(null);
       setStatus("unauthenticated");
+    });
+
+    setTokenChangeHandler((token) => {
+      if (cancelled) return;
+      if (token) {
+        setStatus("authenticated");
+        void apiMe()
+          .then((u) => {
+            if (!cancelled) setUser(u);
+          })
+          .catch(() => undefined);
+        scheduleProactiveRefresh();
+      } else {
+        setUser(null);
+        setStatus("unauthenticated");
+      }
     });
 
     const bootstrap = async () => {
@@ -148,15 +208,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
       setAuthExpiredHandler(null);
+      setTokenChangeHandler(null);
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
     };
   }, [scheduleProactiveRefresh]);
 
-
   const value = useMemo(
-    () => ({ user, status, login, logout }),
-    [user, status, login, logout],
+    () => ({ user, status, login, setSession, refreshSession, logout }),
+    [user, status, login, setSession, refreshSession, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
