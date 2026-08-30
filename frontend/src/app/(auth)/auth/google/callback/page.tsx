@@ -32,21 +32,24 @@ function GoogleCallbackContent() {
         const redirectUri = `${window.location.origin}/auth/google/callback`;
         const result = await googleAuthCallback(code, state, redirectUri);
 
-        if (window.opener) {
-          // Notify parent window
-          window.opener.postMessage(
-            {
-              type: "MWALIMU_GOOGLE_AUTH_SUCCESS",
-              access: result.access,
-            },
-            window.location.origin,
-          );
-          window.close();
+        setAccess(result.access);
+        if (window.opener && !window.opener.closed) {
+          try {
+            window.opener.postMessage(
+              {
+                type: "MWALIMU_GOOGLE_AUTH_SUCCESS",
+                access: result.access,
+              },
+              window.location.origin,
+            );
+            window.close();
+          } catch {
+            router.replace("/chat/new");
+          }
         } else {
-          // Direct redirect
-          setAccess(result.access);
           router.replace("/chat/new");
         }
+
       } catch (err) {
         setError(
           err instanceof Error

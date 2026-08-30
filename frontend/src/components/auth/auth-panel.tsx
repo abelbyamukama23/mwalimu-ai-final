@@ -164,17 +164,23 @@ export function AuthPanel({
       const height = 640;
       const left = window.screen.width / 2 - width / 2;
       const top = window.screen.height / 2 - height / 2;
-      window.open(
+      const popup = window.open(
         url,
         "GoogleSignIn",
         `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`,
       );
+
+      // If popup was blocked by browser or on mobile, fallback to direct redirect
+      if (!popup || popup.closed || typeof popup.closed === "undefined") {
+        window.location.href = url;
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to initiate Google sign-in.",
       );
     }
   };
+
 
   let title = "Welcome back";
   let subtitle = "Please login to access your personalized learning workspace.";
