@@ -10,7 +10,7 @@ import { SignupForm } from "@/components/auth/signup-form";
 import { useAuth } from "@/components/auth/auth-provider";
 import { getGoogleAuthUrl, register, resendOtp, verifyEmail } from "@/lib/api/auth";
 import { normalizeEmail } from "@/lib/auth/email";
-import { setAccess } from "@/lib/auth/token-store";
+import { MwalimuLogo } from "@/components/ui/logo";
 
 export type AuthMode = "page" | "modal";
 
@@ -218,9 +218,7 @@ export function AuthPanel({
       >
         {/* Brand mark */}
         <div className="mb-6 flex items-center justify-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-16 font-bold text-white shadow-xs">
-            M
-          </div>
+          <MwalimuLogo size={36} priority />
           <span className="text-18 font-semibold tracking-tight text-ink">Mwalimu</span>
         </div>
 

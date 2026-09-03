@@ -20,9 +20,11 @@ import {
   MicrosoftIcon,
   SlackIcon,
 } from "hugeicons-react";
+import { MwalimuLogo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
 type BrandIconType =
+  | "mwalimu"
   | "google_drive"
   | "google_drive_simple"
   | "google_drive_huge"
@@ -57,6 +59,11 @@ export function BrandIcon({
   colored = true,
 }: BrandIconProps) {
   const normalized = name.toLowerCase().replace(/[-_ ]/g, "_");
+
+  // Mwalimu
+  if (normalized === "mwalimu" || normalized === "mwalimu_ai" || normalized === "logo") {
+    return <MwalimuLogo size={size} className={className} />;
+  }
 
   // Google Drive
   if (normalized === "google_drive_simple") {

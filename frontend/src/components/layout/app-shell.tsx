@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { SidebarContent } from "@/components/layout/sidebar";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
+import { MwalimuLogo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
 /**
@@ -54,7 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href="/chat/new"
                   className="focus-ring flex items-center gap-2 rounded-sm px-1 py-1"
                 >
-                  <span aria-hidden className="h-7 w-7 rounded-sm bg-accent" />
+                  <MwalimuLogo size={28} priority />
                   <span className="text-17 font-semibold text-ink">Mwalimu</span>
                 </Link>
                 <div className="flex-1" />
@@ -95,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           <div onClick={() => setNavOpen(false)} className="flex h-full flex-col">
             <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-3">
-              <span aria-hidden className="h-7 w-7 rounded-sm bg-accent" />
+              <MwalimuLogo size={28} />
               <span className="text-17 font-semibold text-ink">Mwalimu</span>
             </div>
             <div className="min-h-0 flex-1">

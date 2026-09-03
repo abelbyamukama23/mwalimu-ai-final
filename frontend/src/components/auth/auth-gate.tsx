@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
+import { MwalimuLogo } from "@/components/ui/logo";
 
 function AuthSplash() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-canvas">
-      <span aria-hidden className="h-9 w-9 animate-pulse rounded-sm bg-accent" />
+      <MwalimuLogo size={40} priority className="animate-pulse" />
       <p className="text-13 text-ink-tertiary">Mwalimu</p>
     </div>
   );
