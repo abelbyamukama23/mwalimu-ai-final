@@ -42,6 +42,8 @@ def _is_institution_admin(user: User | Any, institution: Institution) -> bool:
     """Return True if the user is an active administrator of the institution."""
     if not isinstance(user, User):
         return False
+    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+        return True
     return Membership.objects.filter(
         user=user,
         institution=institution,
@@ -54,6 +56,8 @@ def _is_institution_member(user: User | Any, institution: Institution) -> bool:
     """Return True if the user has an active membership in the institution."""
     if not isinstance(user, User):
         return False
+    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+        return True
     return Membership.objects.filter(
         user=user,
         institution=institution,
