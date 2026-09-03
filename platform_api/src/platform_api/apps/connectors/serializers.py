@@ -71,6 +71,7 @@ class ConnectionListSerializer(serializers.ModelSerializer):  # type: ignore[typ
 
     connector = ConnectorSummarySerializer(read_only=True)
     has_credentials = serializers.BooleanField(read_only=True)
+    library_name = serializers.CharField(source="library.name", read_only=True)
 
     class Meta:
         """Serializer metadata."""
@@ -79,6 +80,7 @@ class ConnectionListSerializer(serializers.ModelSerializer):  # type: ignore[typ
         fields = [
             "id",
             "library_id",
+            "library_name",
             "connector",
             "name",
             "status",

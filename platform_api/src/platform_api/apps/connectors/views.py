@@ -139,6 +139,24 @@ class LibraryConnectionListCreateView(APIView):
             created_by=request.user,
         )
 
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.CONNECTION_CREATED,
+                target_type="connection",
+                target_id=connection.id,
+                target_repr=f"{connection.name} ({connection.connector.name})",
+                actor=request.user,
+                metadata={
+                    "library": library.name,
+                    "connector": connection.connector.name,
+                },
+                request=request,
+            )
+
         response_serializer = ConnectionDetailSerializer(connection)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -227,6 +245,21 @@ class LibraryConnectionDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         updated_connection = serializer.save()
 
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.CONNECTION_UPDATED,
+                target_type="connection",
+                target_id=updated_connection.id,
+                target_repr=f"{updated_connection.name} ({updated_connection.connector.name})",
+                actor=request.user,
+                metadata={"updated_fields": list(request.data.keys())},
+                request=request,
+            )
+
         response_serializer = ConnectionDetailSerializer(updated_connection)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
@@ -242,11 +275,32 @@ class LibraryConnectionDetailView(APIView):
         assert isinstance(request.user, User)
         library = _get_managed_library(request.user, library_id)
         try:
-            connection = Connection.objects.get(id=connection_id, library=library)
+            connection = Connection.objects.select_related("connector").get(
+                id=connection_id, library=library
+            )
         except Connection.DoesNotExist as exc:
             raise PermissionDenied("Connection not found in this library.") from exc
 
+        conn_id = connection.id
+        conn_name = connection.name
+        conn_type = connection.connector.name
         connection.delete()
+
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.CONNECTION_DELETED,
+                target_type="connection",
+                target_id=conn_id,
+                target_repr=f"{conn_name} ({conn_type})",
+                actor=request.user,
+                metadata={"library": library.name},
+                request=request,
+            )
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -321,6 +375,21 @@ class LibraryConnectionSyncTriggerView(APIView):
         except Exception:
             # If celery is in eager mode or offline, we log and return the queued job
             pass
+
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.CONNECTION_SYNC_TRIGGERED,
+                target_type="connection",
+                target_id=connection.id,
+                target_repr=f"{connection.name} ({connection.connector.name})",
+                actor=request.user,
+                metadata={"library": library.name, "sync_job_id": str(sync_job.id)},
+                request=request,
+            )
 
         serializer = ConnectionSyncJobSerializer(sync_job)
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)

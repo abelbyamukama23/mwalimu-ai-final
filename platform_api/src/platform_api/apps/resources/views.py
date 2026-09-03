@@ -189,6 +189,24 @@ class ResourceViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
                 proc_exc,
             )
 
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.RESOURCE_UPLOADED,
+                target_type="resource",
+                target_id=resource.id,
+                target_repr=f"{resource.original_filename or resource.name} ({library.name})",
+                actor=request.user,
+                metadata={
+                    "resource_type": resource.resource_type,
+                    "size": resource.size,
+                },
+                request=request,
+            )
+
         serializer = self.get_serializer(resource)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -197,17 +215,32 @@ class ResourceViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         self, request: Request, *args: object, **kwargs: object
     ) -> Response:
         """Return or trigger processing run status for the resource."""
-        self.get_library()
+        library = self.get_library()
         resource = self.get_object()
 
         from platform_api.apps.processing.models import ProcessingRun
 
         run: ProcessingRun | None
         if request.method == "POST":
-            self.get_library(require_manage=True)
+            library = self.get_library(require_manage=True)
             from platform_api.apps.processing.services import enqueue_processing
 
             run = enqueue_processing(resource)
+
+            if library.institution:
+                from platform_api.apps.institutions.audit import record_audit_event
+                from platform_api.apps.institutions.models import AuditAction
+
+                record_audit_event(
+                    institution=library.institution,
+                    action=AuditAction.RESOURCE_REINDEXED,
+                    target_type="resource",
+                    target_id=resource.id,
+                    target_repr=f"{resource.original_filename or resource.name} ({library.name})",
+                    actor=request.user,
+                    metadata={"run_id": str(run.id) if run else None},
+                    request=request,
+                )
         else:
             run = (
                 ProcessingRun.objects.filter(resource=resource)
@@ -261,8 +294,10 @@ class ResourceViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         Storage is deleted first so the system of record never points to a
         missing object. If storage deletion fails, the database record is kept.
         """
-        self.get_library(require_manage=True)
+        library = self.get_library(require_manage=True)
         resource = self.get_object()
+        res_id = resource.id
+        res_name = resource.original_filename or resource.name
         storage = self._storage()
 
         try:
@@ -272,7 +307,24 @@ class ResourceViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
                 {"detail": f"Failed to delete stored object: {exc}"}
             ) from exc
 
-        return super().destroy(request, *args, **kwargs)
+        response = super().destroy(request, *args, **kwargs)
+
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.RESOURCE_DELETED,
+                target_type="resource",
+                target_id=res_id,
+                target_repr=f"{res_name} ({library.name})",
+                actor=request.user,
+                metadata={"library": library.name},
+                request=request,
+            )
+
+        return response
 
     @action(detail=True, methods=["get"])
     def download(

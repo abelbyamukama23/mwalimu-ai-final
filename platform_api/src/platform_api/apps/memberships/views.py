@@ -104,7 +104,36 @@ class MembershipViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         """Only institution administrators may update memberships."""
         membership = self.get_object()
         self._admin_required(membership)
-        return super().update(request, *args, **kwargs)
+        old_role = membership.role
+        old_status = membership.status
+        response = super().update(request, *args, **kwargs)
+        membership.refresh_from_db()
+        from platform_api.apps.institutions.audit import record_audit_event
+        from platform_api.apps.institutions.models import AuditAction
+
+        if old_role != membership.role:
+            record_audit_event(
+                institution=membership.institution,
+                action=AuditAction.MEMBER_ROLE_CHANGED,
+                target_type="membership",
+                target_id=membership.id,
+                target_repr=membership.user.email,
+                actor=request.user if isinstance(request.user, User) else None,
+                metadata={"old_role": old_role, "new_role": membership.role},
+                request=request,
+            )
+        if old_status != membership.status:
+            record_audit_event(
+                institution=membership.institution,
+                action=AuditAction.MEMBER_STATUS_CHANGED,
+                target_type="membership",
+                target_id=membership.id,
+                target_repr=membership.user.email,
+                actor=request.user if isinstance(request.user, User) else None,
+                metadata={"old_status": old_status, "new_status": membership.status},
+                request=request,
+            )
+        return response
 
     def partial_update(
         self, request: Request, *args: object, **kwargs: object
@@ -112,7 +141,36 @@ class MembershipViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         """Only institution administrators may partially update memberships."""
         membership = self.get_object()
         self._admin_required(membership)
-        return super().partial_update(request, *args, **kwargs)
+        old_role = membership.role
+        old_status = membership.status
+        response = super().partial_update(request, *args, **kwargs)
+        membership.refresh_from_db()
+        from platform_api.apps.institutions.audit import record_audit_event
+        from platform_api.apps.institutions.models import AuditAction
+
+        if old_role != membership.role:
+            record_audit_event(
+                institution=membership.institution,
+                action=AuditAction.MEMBER_ROLE_CHANGED,
+                target_type="membership",
+                target_id=membership.id,
+                target_repr=membership.user.email,
+                actor=request.user if isinstance(request.user, User) else None,
+                metadata={"old_role": old_role, "new_role": membership.role},
+                request=request,
+            )
+        if old_status != membership.status:
+            record_audit_event(
+                institution=membership.institution,
+                action=AuditAction.MEMBER_STATUS_CHANGED,
+                target_type="membership",
+                target_id=membership.id,
+                target_repr=membership.user.email,
+                actor=request.user if isinstance(request.user, User) else None,
+                metadata={"old_status": old_status, "new_status": membership.status},
+                request=request,
+            )
+        return response
 
     def destroy(self, request: Request, *args: object, **kwargs: object) -> Response:
         """Only institution administrators may delete memberships."""
@@ -137,7 +195,24 @@ class MembershipViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
                 raise ValidationError(
                     "Cannot remove the final active administrator of an institution."
                 )
-        return super().destroy(request, *args, **kwargs)
+        inst = membership.institution
+        user_email = membership.user.email
+        mem_id = membership.id
+        response = super().destroy(request, *args, **kwargs)
+        from platform_api.apps.institutions.audit import record_audit_event
+        from platform_api.apps.institutions.models import AuditAction
+
+        record_audit_event(
+            institution=inst,
+            action=AuditAction.MEMBER_REMOVED,
+            target_type="membership",
+            target_id=mem_id,
+            target_repr=user_email,
+            actor=request.user if isinstance(request.user, User) else None,
+            metadata={"removed_user": user_email},
+            request=request,
+        )
+        return response
 
     def get_serializer_context(self) -> dict[str, Any]:
         """Include the current request in serializer context."""

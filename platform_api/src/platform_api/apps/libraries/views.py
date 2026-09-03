@@ -149,10 +149,23 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
                     "You do not have permission to create a library in "
                     "this institution.",
                 )
-            serializer.save(
+            library = serializer.save(
                 scope_type=LibraryScopeType.INSTITUTION,
                 institution_id=institution_id,
                 owner=None,
+            )
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.LIBRARY_CREATED,
+                target_type="library",
+                target_id=library.id,
+                target_repr=library.name,
+                actor=self.request.user,
+                metadata={"visibility": library.visibility, "slug": library.slug},
+                request=self.request,
             )
         else:
             serializer.save(
@@ -168,7 +181,22 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             raise PermissionDenied(
                 "You do not have permission to update this library.",
             )
-        return super().update(request, *args, **kwargs)
+        response = super().update(request, *args, **kwargs)
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.LIBRARY_UPDATED,
+                target_type="library",
+                target_id=library.id,
+                target_repr=library.name,
+                actor=request.user,
+                metadata={"updated_fields": list(request.data.keys())},
+                request=request,
+            )
+        return response
 
     def partial_update(
         self, request: Request, *args: object, **kwargs: object
@@ -179,7 +207,22 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             raise PermissionDenied(
                 "You do not have permission to update this library.",
             )
-        return super().partial_update(request, *args, **kwargs)
+        response = super().partial_update(request, *args, **kwargs)
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.LIBRARY_UPDATED,
+                target_type="library",
+                target_id=library.id,
+                target_repr=library.name,
+                actor=request.user,
+                metadata={"updated_fields": list(request.data.keys())},
+                request=request,
+            )
+        return response
 
     def destroy(self, request: Request, *args: object, **kwargs: object) -> Response:
         """Only library managers may delete a library."""
@@ -188,7 +231,25 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             raise PermissionDenied(
                 "You do not have permission to delete this library.",
             )
-        return super().destroy(request, *args, **kwargs)
+        inst = library.institution
+        lib_id = library.id
+        lib_name = library.name
+        response = super().destroy(request, *args, **kwargs)
+        if inst:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=inst,
+                action=AuditAction.LIBRARY_DELETED,
+                target_type="library",
+                target_id=lib_id,
+                target_repr=lib_name,
+                actor=request.user,
+                metadata={"deleted_library": lib_name},
+                request=request,
+            )
+        return response
 
 
 class LibraryAccessPolicyViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
@@ -234,4 +295,59 @@ class LibraryAccessPolicyViewSet(viewsets.ModelViewSet):  # type: ignore[type-ar
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
         """Create the policy scoped to the managed library."""
         library = self.get_library()
-        serializer.save(library=library)
+        policy = serializer.save(library=library)
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.ACCESS_GRANTED,
+                target_type="access_policy",
+                target_id=policy.id,
+                target_repr=f"{policy.user.email} -> {library.name}",
+                actor=self.request.user,
+                metadata={"role": policy.role, "user_email": policy.user.email},
+                request=self.request,
+            )
+
+    def perform_update(self, serializer: BaseSerializer[Any]) -> None:
+        """Update the policy."""
+        policy = serializer.save()
+        library = policy.library
+        if library.institution:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=library.institution,
+                action=AuditAction.ACCESS_UPDATED,
+                target_type="access_policy",
+                target_id=policy.id,
+                target_repr=f"{policy.user.email} -> {library.name}",
+                actor=self.request.user,
+                metadata={"role": policy.role, "user_email": policy.user.email},
+                request=self.request,
+            )
+
+    def perform_destroy(self, instance: Any) -> None:
+        """Revoke the policy."""
+        library = instance.library
+        inst = library.institution
+        policy_id = instance.id
+        user_email = instance.user.email
+        super().perform_destroy(instance)
+        if inst:
+            from platform_api.apps.institutions.audit import record_audit_event
+            from platform_api.apps.institutions.models import AuditAction
+
+            record_audit_event(
+                institution=inst,
+                action=AuditAction.ACCESS_REVOKED,
+                target_type="access_policy",
+                target_id=policy_id,
+                target_repr=f"{user_email} -> {library.name}",
+                actor=self.request.user,
+                metadata={"revoked_user": user_email},
+                request=self.request,
+            )

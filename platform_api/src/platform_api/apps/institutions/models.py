@@ -79,3 +79,93 @@ class Institution(models.Model):
     def __str__(self) -> str:
         """Return the institution name."""
         return self.name
+
+
+class AuditAction(models.TextChoices):
+    """Enumeration of audited administrative actions."""
+
+    # Memberships
+    MEMBER_ROLE_CHANGED = "member.role_changed", "Member Role Changed"
+    MEMBER_STATUS_CHANGED = "member.status_changed", "Member Status Changed"
+    MEMBER_REMOVED = "member.removed", "Member Removed"
+
+    # Libraries
+    LIBRARY_CREATED = "library.created", "Library Created"
+    LIBRARY_UPDATED = "library.updated", "Library Updated"
+    LIBRARY_DELETED = "library.deleted", "Library Deleted"
+
+    # Access Policies
+    ACCESS_GRANTED = "access.granted", "Access Policy Granted"
+    ACCESS_UPDATED = "access.updated", "Access Policy Updated"
+    ACCESS_REVOKED = "access.revoked", "Access Policy Revoked"
+
+    # Resources
+    RESOURCE_UPLOADED = "resource.uploaded", "Resource Uploaded"
+    RESOURCE_DELETED = "resource.deleted", "Resource Deleted"
+    RESOURCE_REINDEXED = "resource.reindexed", "Resource Reindexed"
+
+    # Connections
+    CONNECTION_CREATED = "connection.created", "Connection Created"
+    CONNECTION_UPDATED = "connection.updated", "Connection Updated"
+    CONNECTION_DELETED = "connection.deleted", "Connection Deleted"
+    CONNECTION_SYNC_TRIGGERED = "connection.sync_triggered", "Sync Triggered"
+
+    # Institution
+    INSTITUTION_UPDATED = "institution.updated", "Institution Settings Updated"
+
+
+class InstitutionalAuditEvent(models.Model):
+    """Immutable, append-only ledger of administrative actions for an institution."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    institution = models.ForeignKey(
+        Institution,
+        on_delete=models.CASCADE,
+        related_name="audit_events",
+        db_index=True,
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_actions",
+    )
+    action = models.CharField(max_length=50, choices=AuditAction.choices, db_index=True)
+    target_type = models.CharField(max_length=50, db_index=True)
+    target_id = models.CharField(max_length=255, blank=True, default="")
+    target_repr = models.CharField(max_length=255)
+    metadata = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
+
+    class Meta:
+        """Model metadata."""
+
+        db_table = "institutions_audit_event"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["institution", "-created_at"]),
+            models.Index(fields=["institution", "action"]),
+        ]
+        verbose_name = "institutional audit event"
+        verbose_name_plural = "institutional audit events"
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        """Enforce append-only immutability."""
+        from django.core.exceptions import ValidationError
+
+        if not self._state.adding:
+            raise ValidationError("Audit events are strictly immutable and cannot be updated.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        """Block deletion of audit events."""
+        from django.core.exceptions import ValidationError
+
+        raise ValidationError("Audit events are strictly immutable and cannot be deleted.")
+
+    def __str__(self) -> str:
+        """Human-readable string representation."""
+        actor_email = self.actor.email if self.actor else "system"
+        return f"{self.created_at.isoformat()} | {self.action} by {actor_email} on {self.target_repr}"
