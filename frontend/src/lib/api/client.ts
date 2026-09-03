@@ -40,6 +40,7 @@ export function setAccessTokenProvider(provider: (() => string | null) | null) {
 
 export type ApiFetchOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  headers?: HeadersInit;
   body?: unknown;
   /** multipart/form-data uploads (Resource create). */
   formData?: FormData;
@@ -60,10 +61,17 @@ export async function apiFetch<T>(
   path: `/api/v1/${string}`,
   options: ApiFetchOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, formData, signal, csrf = false, retry = false } =
-    options;
+  const {
+    method = "GET",
+    headers: customHeaders,
+    body,
+    formData,
+    signal,
+    csrf = false,
+    retry = false,
+  } = options;
 
-  const headers = new Headers();
+  const headers = new Headers(customHeaders);
   const token = accessTokenProvider();
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (body !== undefined) headers.set("Content-Type", "application/json");
