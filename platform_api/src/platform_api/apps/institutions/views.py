@@ -49,16 +49,20 @@ class InstitutionViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         return Institution.objects.all().order_by("-created_at")
 
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
-        """Create the institution and make the requester its first admin."""
-        institution = serializer.save()
+        """Create the institution and atomically make the requester its first admin."""
         user = self.request.user
-        if isinstance(user, User):
-            Membership.objects.create(
-                user=user,
-                institution=institution,
-                role=MembershipRole.ADMINISTRATOR,
-                status=MembershipStatus.ACTIVE,
-            )
+        created_by_user = user if isinstance(user, User) else None
+        from django.db import transaction
+
+        with transaction.atomic():
+            institution = serializer.save(created_by=created_by_user)
+            if isinstance(user, User):
+                Membership.objects.create(
+                    user=user,
+                    institution=institution,
+                    role=MembershipRole.ADMINISTRATOR,
+                    status=MembershipStatus.ACTIVE,
+                )
 
     def update(self, request: Request, *args: object, **kwargs: object) -> Response:
         """Only institution administrators may update an institution."""

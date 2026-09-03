@@ -78,3 +78,26 @@ class Membership(models.Model):
     def __str__(self) -> str:
         """Return a human-readable membership description."""
         return f"{self.user.email} @ {self.institution.name} ({self.role})"
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        """Prevent deleting the last active administrator of an institution."""
+        if (
+            self.role == MembershipRole.ADMINISTRATOR
+            and self.status == MembershipStatus.ACTIVE
+        ):
+            active_admins = (
+                Membership.objects.filter(
+                    institution=self.institution,
+                    role=MembershipRole.ADMINISTRATOR,
+                    status=MembershipStatus.ACTIVE,
+                )
+                .exclude(pk=self.pk)
+                .count()
+            )
+            if active_admins == 0:
+                from django.core.exceptions import ValidationError
+
+                raise ValidationError(
+                    "Cannot delete the final active administrator of an institution."
+                )
+        return super().delete(*args, **kwargs)

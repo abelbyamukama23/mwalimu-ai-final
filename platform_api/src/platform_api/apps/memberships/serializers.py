@@ -65,8 +65,33 @@ class MembershipSerializer(serializers.ModelSerializer):  # type: ignore[type-ar
         return institution_id
 
     def validate(self, attrs: dict[str, object]) -> dict[str, object]:
-        """Apply domain-level membership validation on creation."""
+        """Apply domain-level membership validation on creation and update."""
         if self.instance is not None:
+            instance = self.instance
+            new_role = attrs.get("role", instance.role)
+            new_status = attrs.get("status", instance.status)
+
+            if (
+                instance.role == MembershipRole.ADMINISTRATOR
+                and instance.status == MembershipStatus.ACTIVE
+            ):
+                if (
+                    new_role != MembershipRole.ADMINISTRATOR
+                    or new_status != MembershipStatus.ACTIVE
+                ):
+                    active_admins = (
+                        Membership.objects.filter(
+                            institution=instance.institution,
+                            role=MembershipRole.ADMINISTRATOR,
+                            status=MembershipStatus.ACTIVE,
+                        )
+                        .exclude(pk=instance.pk)
+                        .count()
+                    )
+                    if active_admins == 0:
+                        raise serializers.ValidationError(
+                            "Cannot demote, deactivate, or suspend the final active administrator of an institution."
+                        )
             return attrs
 
         request = self.context.get("request")

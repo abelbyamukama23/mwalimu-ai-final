@@ -2,6 +2,7 @@
 
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -12,6 +13,21 @@ class InstitutionStatus(models.TextChoices):
     ACTIVE = "active", "Active"
     SUSPENDED = "suspended", "Suspended"
     ARCHIVED = "archived", "Archived"
+
+
+class InstitutionType(models.TextChoices):
+    """Classification of organizational learning workspaces."""
+
+    FAMILY = "family", "Family"
+    SCHOOL = "school", "School (K-12)"
+    COLLEGE = "college", "College / Vocational Institute"
+    UNIVERSITY = "university", "University / Higher Education"
+    TRAINING_CENTER = "training_center", "Training Center / Academy"
+    EDUCATION_ORGANIZATION = (
+        "education_organization",
+        "Educational Organization / NGO",
+    )
+    OTHER = "other", "Other Organization"
 
 
 class Institution(models.Model):
@@ -25,6 +41,21 @@ class Institution(models.Model):
         choices=InstitutionStatus.choices,
         default=InstitutionStatus.ACTIVE,
         db_index=True,
+    )
+    institution_type = models.CharField(
+        max_length=30,
+        choices=InstitutionType.choices,
+        default=InstitutionType.SCHOOL,
+        db_index=True,
+        help_text="The organizational classification of this learning workspace.",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_institutions",
+        help_text="User who originally established this institution workspace.",
     )
 
     created_at = models.DateTimeField(default=timezone.now, editable=False)

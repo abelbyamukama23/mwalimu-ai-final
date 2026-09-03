@@ -40,10 +40,48 @@ class MembershipViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
     lookup_field = "pk"
 
     def get_queryset(self) -> QuerySet[Membership]:
-        """Return memberships visible to the authenticated user."""
+        """Return memberships visible to the authenticated user.
+
+        If institution_id is passed via query params or X-Institution-Id header,
+        it scopes the results to that institution:
+        - If the caller is an active administrator of that institution, return all
+          memberships for that institution.
+        - If the caller is a member but not admin, return only their own membership.
+        - If the caller is not a member, return empty queryset.
+
+        If no institution_id is specified, return the user's own memberships plus
+        all memberships in institutions where the user is an active administrator.
+        """
         user = self.request.user
         if not isinstance(user, User):
             return Membership.objects.none()
+
+        institution_param = (
+            self.request.query_params.get("institution_id")
+            or self.request.headers.get("X-Institution-Id")
+        )
+        if institution_param:
+            try:
+                target_inst_id = uuid.UUID(str(institution_param))
+            except (ValueError, TypeError):
+                return Membership.objects.none()
+
+            is_admin = Membership.objects.filter(
+                user=user,
+                institution_id=target_inst_id,
+                role=MembershipRole.ADMINISTRATOR,
+                status=MembershipStatus.ACTIVE,
+            ).exists()
+
+            if is_admin:
+                return Membership.objects.filter(
+                    institution_id=target_inst_id
+                ).order_by("-created_at")
+            else:
+                return Membership.objects.filter(
+                    user=user,
+                    institution_id=target_inst_id,
+                ).order_by("-created_at")
 
         admin_institution_ids = Membership.objects.filter(
             user=user,
@@ -80,6 +118,25 @@ class MembershipViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         """Only institution administrators may delete memberships."""
         membership = self.get_object()
         self._admin_required(membership)
+        if (
+            membership.role == MembershipRole.ADMINISTRATOR
+            and membership.status == MembershipStatus.ACTIVE
+        ):
+            active_admins = (
+                Membership.objects.filter(
+                    institution_id=membership.institution_id,
+                    role=MembershipRole.ADMINISTRATOR,
+                    status=MembershipStatus.ACTIVE,
+                )
+                .exclude(pk=membership.pk)
+                .count()
+            )
+            if active_admins == 0:
+                from rest_framework.exceptions import ValidationError
+
+                raise ValidationError(
+                    "Cannot remove the final active administrator of an institution."
+                )
         return super().destroy(request, *args, **kwargs)
 
     def get_serializer_context(self) -> dict[str, Any]:
