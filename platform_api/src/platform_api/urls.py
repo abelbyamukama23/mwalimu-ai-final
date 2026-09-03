@@ -66,6 +66,21 @@ admin.site.get_app_list = _ordered_admin_app_list  # type: ignore[method-assign,
 
 
 @require_GET
+def root_view(request: HttpRequest) -> JsonResponse:
+    """Root endpoint for Mwalimu Platform API."""
+    return JsonResponse(
+        {
+            "service": "mwalimu-platform-api",
+            "status": "operational",
+            "version": "v1",
+            "docs": "/api/docs/",
+            "health": "/health/",
+        },
+        status=200,
+    )
+
+
+@require_GET
 def health_check(request: HttpRequest) -> JsonResponse:
     """Lightweight unauthenticated health check for Railway deployment."""
     return JsonResponse(
@@ -78,9 +93,11 @@ def health_check(request: HttpRequest) -> JsonResponse:
 
 
 urlpatterns = [
+    path("", root_view, name="root"),
     path("health/", health_check, name="health_check"),
     path("health", health_check, name="health_check_noslash"),
     path("admin/", admin.site.urls),
+
     # Core Authentication Routes
     path("api/v1/auth/register/", RegisterView.as_view(), name="register"),
     path("api/v1/auth/verify-email/", VerifyEmailView.as_view(), name="verify_email"),
