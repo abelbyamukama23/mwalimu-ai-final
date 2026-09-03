@@ -273,6 +273,7 @@ class InstitutionViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             },
             "ai_telemetry_30d": {
                 "total_tokens": ai_agg["total_tokens"],
+                "total_credits": max(0, round(ai_agg["total_tokens"] / 1000)),
                 "total_runs": ai_agg["total_runs"],
                 "active_users": ai_agg["active_users"],
             },
@@ -337,6 +338,10 @@ class InstitutionViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             active_users=Count("user", distinct=True),
         )
 
+        summary_agg["total_credits"] = max(0, round(summary_agg["total_tokens"] / 1000))
+        summary_agg["query_credits"] = max(0, round(summary_agg["prompt_tokens"] / 1000))
+        summary_agg["synthesis_credits"] = max(0, round(summary_agg["completion_tokens"] / 1000))
+
         timeline_qs = (
             runs_qs.annotate(date=TruncDate("created_at"))
             .values("date")
@@ -352,8 +357,11 @@ class InstitutionViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             {
                 "date": row["date"].isoformat(),
                 "total_tokens": row["total_tokens"],
+                "total_credits": max(0, round(row["total_tokens"] / 1000)),
                 "prompt_tokens": row["prompt_tokens"],
+                "query_credits": max(0, round(row["prompt_tokens"] / 1000)),
                 "completion_tokens": row["completion_tokens"],
+                "synthesis_credits": max(0, round(row["completion_tokens"] / 1000)),
                 "total_runs": row["total_runs"],
             }
             for row in timeline_qs
@@ -372,6 +380,7 @@ class InstitutionViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
                 "user_id": str(row["user__id"]),
                 "email": row["user__email"] or "Unknown",
                 "total_tokens": row["total_tokens"],
+                "total_credits": max(0, round(row["total_tokens"] / 1000)),
                 "total_runs": row["total_runs"],
             }
             for row in top_users_qs

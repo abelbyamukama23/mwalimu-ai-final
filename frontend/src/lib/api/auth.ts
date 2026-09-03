@@ -92,7 +92,8 @@ export async function resendOtp(
 export async function login(email: string, password: string): Promise<LoginResult> {
   return apiFetch<LoginResult>("/api/v1/auth/login/", {
     method: "POST",
-    body: { email, password },
+    headers: { "X-Client-Type": "user_chat" },
+    body: { email, password, client_type: "user_chat" },
   });
 }
 

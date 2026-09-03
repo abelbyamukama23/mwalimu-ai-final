@@ -236,7 +236,68 @@ class GoogleAuthCallbackSerializer(serializers.Serializer):  # type: ignore[type
 
 
 class LoginAccessSerializer(TokenObtainPairSerializer):
-    """Obtain an access/refresh pair; the caller decides how to expose refresh."""
+    """Obtain an access/refresh pair with institutional persona boundary enforcement."""
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        data = super().validate(attrs)
+        user = self.user
+
+        request = self.context.get("request")
+        client_type = None
+        if request:
+            client_type = (
+                request.headers.get("X-Client-Type")
+                or request.data.get("client_type")
+            )
+            if not client_type:
+                origin = (
+                    request.META.get("HTTP_ORIGIN", "")
+                    or request.META.get("HTTP_REFERER", "")
+                )
+                if "institutions.ai-mwalimu.com" in origin:
+                    client_type = "institutional_console"
+
+        # Superusers and staff maintain access across boundaries for operational maintenance
+        is_platform_admin = getattr(user, "is_superuser", False) or getattr(user, "is_staff", False)
+
+        from platform_api.apps.memberships.models import (
+            Membership,
+            MembershipRole,
+            MembershipStatus,
+        )
+
+        has_institutional_membership = Membership.objects.filter(
+            user=user,
+            status=MembershipStatus.ACTIVE,
+        ).exists()
+
+        if client_type == "institutional_console":
+            if not has_institutional_membership and not is_platform_admin:
+                raise serializers.ValidationError(
+                    {
+                        "detail": (
+                            "This account does not have an institutional profile. "
+                            "The institutional console is reserved for verified school and organization administrators."
+                        )
+                    }
+                )
+        elif client_type == "user_chat":
+            is_institutional_admin = Membership.objects.filter(
+                user=user,
+                role=MembershipRole.ADMINISTRATOR,
+                status=MembershipStatus.ACTIVE,
+            ).exists()
+            if is_institutional_admin and not is_platform_admin:
+                raise serializers.ValidationError(
+                    {
+                        "detail": (
+                            "Institutional administrator accounts cannot access the student/learner chat interface. "
+                            "Please sign in via the Institutional Console at institutions.ai-mwalimu.com."
+                        )
+                    }
+                )
+
+        return data
 
 
 class CookieTokenRefreshSerializer(TokenRefreshSerializer):
