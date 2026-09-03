@@ -56,11 +56,23 @@ class FakeRetriever:
         top_k: int,
         similarity_threshold: float | None = None,
         include_text: bool = True,
+        target_structure_node_ids: Sequence[uuid.UUID] | None = None,
+        query_text: str | None = None,
+        target_page_numbers: Sequence[int] | None = None,
+        query_intent: Any = None,
+        **kwargs: Any,
     ) -> list[SearchResultItemDTO]:
+
+
         self.call_count += 1
         self.last_scope = scope
         self.last_top_k = top_k
+        self.last_target_nodes = target_structure_node_ids
+        self.last_query_text = query_text
+        self.last_target_pages = target_page_numbers
         return self.results
+
+
 
 
 class ErrorEmbeddingProvider(FakeEmbeddingProvider):
@@ -167,7 +179,10 @@ def test_use_case_returns_populated_search_response(mock_user: User) -> None:
     response = use_case.execute(user=mock_user, request_dto=request_dto)
 
     assert response.result_count == 1
-    assert response.results[0] == fake_result
+    assert response.results[0].chunk_id == fake_result.chunk_id
+    assert response.results[0].score == fake_result.score
+    assert response.results[0].provenance == fake_result.provenance
     assert response.metadata["libraries_searched"] == 1
+
     assert response.metadata["embedding_dimensions"] == 1536
     assert response.metadata["search_time_ms"] >= 0

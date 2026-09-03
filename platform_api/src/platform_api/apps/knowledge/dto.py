@@ -43,6 +43,9 @@ class SearchResultItemDTO:
     score: float
     text: str
     provenance: ProvenanceDTO
+    citation: Any = None
+    answer_spans: list[Any] | None = None
+
 
 
 @dataclass(frozen=True)

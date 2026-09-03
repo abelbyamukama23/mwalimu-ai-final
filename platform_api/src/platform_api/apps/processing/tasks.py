@@ -23,7 +23,13 @@ from .extractors.docx import EXTRACTOR_VERSION_DOCX
 from .extractors.pdf import EXTRACTOR_VERSION_PDF
 from .extractors.txt import EXTRACTOR_VERSION_TXT
 from .indexing import activate_run, write_chunks_and_embeddings
-from .models import DocumentChunk, ProcessingRun, ProcessingStage, ProcessingStatus
+from .models import (
+    DocumentChunk,
+    DocumentStructureNode,
+    ProcessingRun,
+    ProcessingStage,
+    ProcessingStatus,
+)
 from .normalizer import normalize
 
 logger = logging.getLogger(__name__)
@@ -77,11 +83,11 @@ def process_resource_run(self: Any, run_id: str) -> None:
 
     Stages:
     1. Integrity check: verify resource, library relationship, object key
-    2. Extraction: parse original binary into structured pages
+    2. Extraction: parse original binary into structured pages and native outline
     3. Normalization: clean text while retaining provenance
     4. Chunking: split into deterministic chunks
     5. Embedding: batch generate dense vector embeddings
-    6. Indexing & Activation: transactionally persist and activate run
+    6. Indexing & Activation: transactionally persist structure nodes, chunks, embeddings, and activate run
     """
     try:
         run_uuid = uuid.UUID(str(run_id))
@@ -154,10 +160,7 @@ def process_resource_run(self: Any, run_id: str) -> None:
 
         extracted_doc = extract(raw_bytes, resource.resource_type)
         if extracted_doc.is_empty:
-            logger.info("Empty extraction for resource %s; creating metadata chunk fallback", resource.id)
-            from .extractors import ExtractedPage
-            fallback_text = f"Document: {resource.name}\nFile: {resource.original_filename}\n[Document content is binary/image-based or contains no selectable text]"
-            extracted_doc = ExtractedDocument(pages=[ExtractedPage(page=1, text=fallback_text, heading=resource.name)])
+            raise ExtractionError("EMPTY_EXTRACTION")
 
         # --- Stage 3: Normalization ---
         run.current_stage = ProcessingStage.NORMALIZE
@@ -165,7 +168,7 @@ def process_resource_run(self: Any, run_id: str) -> None:
 
         normalized_doc = normalize(extracted_doc)
         if normalized_doc.is_empty:
-            normalized_doc = normalize(ExtractedDocument(pages=[ExtractedPage(page=1, text=f"Resource: {resource.name}", heading=resource.name)]))
+            raise ExtractionError("EMPTY_EXTRACTION")
 
         # --- Stage 4: Chunking ---
         run.current_stage = ProcessingStage.CHUNK
@@ -173,9 +176,7 @@ def process_resource_run(self: Any, run_id: str) -> None:
 
         chunks = chunk(normalized_doc)
         if not chunks:
-            from .chunker import Chunk
-            chunks = [Chunk(chunk_index=0, text=f"Document: {resource.name}\nFilename: {resource.original_filename}", token_count=10, page_number=1, heading=resource.name)]
-
+            raise ExtractionError("EMPTY_EXTRACTION")
 
         # --- Stage 5: Embedding ---
         run.current_stage = ProcessingStage.EMBED
@@ -190,8 +191,17 @@ def process_resource_run(self: Any, run_id: str) -> None:
         run.save(update_fields=["current_stage", "updated_at"])
 
         with transaction.atomic():
-            write_chunks_and_embeddings(run, chunks, vectors)
+            write_chunks_and_embeddings(
+                run,
+                chunks,
+                vectors,
+                outline=normalized_doc.outline,
+                extracted_pages=extracted_doc.pages,
+                page_labels=extracted_doc.page_labels,
+            )
             activate_run(run)
+
+
 
         run.current_stage = ProcessingStage.FINALIZE
         run.save(update_fields=["current_stage", "updated_at"])
@@ -231,14 +241,15 @@ def process_resource_run(self: Any, run_id: str) -> None:
 def _handle_permanent_failure(
     run: ProcessingRun, error_code: str, error_message: str
 ) -> None:
-    """Mark a ProcessingRun as failed, record details, and purge partial chunks."""
+    """Mark a ProcessingRun as failed, record details, and purge partial chunks/nodes."""
     logger.error(
         "ProcessingRun %s failed with [%s]: %s", run.id, error_code, error_message
     )
     try:
         with transaction.atomic():
-            # Delete any partial chunks created during this run
+            # Delete any partial chunks and structure nodes created during this run
             DocumentChunk.objects.filter(processing_run=run).delete()
+            DocumentStructureNode.objects.filter(processing_run=run).delete()
             run.status = ProcessingStatus.FAILED
             run.is_active = False
             run.error_code = error_code
@@ -258,3 +269,4 @@ def _handle_permanent_failure(
         logger.exception(
             "Failed to record failure state on ProcessingRun %s: %s", run.id, save_exc
         )
+

@@ -8,6 +8,7 @@ Enforces:
 
 from __future__ import annotations
 
+import unicodedata
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -15,8 +16,20 @@ from dataclasses import dataclass
 from django.db import connection, transaction
 from django.utils import timezone
 
+
 from .chunker import ChunkResult
-from .models import ChunkEmbedding, DocumentChunk, ProcessingRun, ProcessingStatus
+from .extractors import ExtractedPage, OutlineNode
+from .index_parser import detect_index_pages, parse_index_entries
+from .models import (
+    BookIndexEntry,
+    ChunkEmbedding,
+    DocumentChunk,
+    DocumentPageMap,
+    DocumentStructureNode,
+    ProcessingRun,
+    ProcessingStatus,
+)
+
 
 
 @dataclass(frozen=True)
@@ -35,18 +48,86 @@ class SearchResult:
     distance: float
 
 
+def _flatten_outline_tree(
+    nodes: Sequence[OutlineNode],
+    parent_id: uuid.UUID | None = None,
+) -> list[tuple[OutlineNode, uuid.UUID, uuid.UUID | None]]:
+    """Flatten an outline tree into an ordered list of (OutlineNode, node_id, parent_id)."""
+    flat: list[tuple[OutlineNode, uuid.UUID, uuid.UUID | None]] = []
+    for node in nodes:
+        node_id = uuid.uuid4()
+        flat.append((node, node_id, parent_id))
+        if node.children:
+            flat.extend(_flatten_outline_tree(node.children, parent_id=node_id))
+    return flat
+
+
+def _find_enclosing_structure_node(
+    chunk_res: ChunkResult,
+    nodes: Sequence[DocumentStructureNode],
+) -> DocumentStructureNode | None:
+    """Find the most specific enclosing DocumentStructureNode for a chunk."""
+    if not nodes:
+        return None
+
+    # Priority 1: Page range matching
+    if chunk_res.page_start is not None:
+        c_pstart = chunk_res.page_start
+        c_pend = chunk_res.page_end or c_pstart
+
+        page_candidates = [
+            n
+            for n in nodes
+            if n.page_start is not None
+            and n.page_start <= c_pstart
+            and (n.page_end is None or n.page_end >= c_pend)
+        ]
+        if page_candidates:
+            # Sort by level descending (deepest), page_start descending (narrowest), sequence descending
+            page_candidates.sort(
+                key=lambda n: (n.level, n.page_start or 0, n.sequence),
+                reverse=True,
+            )
+            return page_candidates[0]
+
+    # Priority 2: Heading / section title matching
+    if chunk_res.section:
+        sec_title = chunk_res.section.strip()
+        sec_norm = unicodedata.normalize("NFC", sec_title)
+
+        title_candidates = [
+            n
+            for n in nodes
+            if n.title == sec_title or n.normalized_title == sec_norm
+        ]
+        if title_candidates:
+            title_candidates.sort(
+                key=lambda n: (n.level, n.sequence),
+                reverse=True,
+            )
+            return title_candidates[0]
+
+    return None
+
+
 @transaction.atomic
 def write_chunks_and_embeddings(
     run: ProcessingRun,
     chunks: Sequence[ChunkResult],
     vectors: Sequence[Sequence[float]],
+    outline: Sequence[OutlineNode] | None = None,
+    extracted_pages: Sequence[ExtractedPage] | None = None,
+    page_labels: Sequence[tuple[int, str, str]] | None = None,
 ) -> list[DocumentChunk]:
-    """Persist chunks and embeddings transactionally for a processing run.
+    """Persist structure nodes, page maps, chunks, embeddings, and book index entries for a run.
 
     Args:
         run: The target ProcessingRun.
         chunks: Sequence of ChunkResult instances.
         vectors: Corresponding normalized vector embeddings.
+        outline: Optional sequence of OutlineNode hierarchy from extraction.
+        extracted_pages: Optional sequence of raw ExtractedPage objects from extraction.
+        page_labels: Optional sequence of (physical_page, printed_label, source) mappings.
 
     Returns:
         List of created or updated DocumentChunk model instances.
@@ -59,17 +140,55 @@ def write_chunks_and_embeddings(
             f"Mismatched chunk count ({len(chunks)}) and vector count ({len(vectors)})"
         )
 
-    # Delete any existing incomplete chunks for this run (for safe retry idempotency)
+    # Delete any existing incomplete chunks, structure nodes, index entries, and page maps for this run
     DocumentChunk.objects.filter(processing_run=run).delete()
+    DocumentStructureNode.objects.filter(processing_run=run).delete()
+    BookIndexEntry.objects.filter(processing_run=run).delete()
+    DocumentPageMap.objects.filter(processing_run=run).delete()
+
+
+
+    created_structure_nodes: list[DocumentStructureNode] = []
+    if outline:
+        flat_nodes = _flatten_outline_tree(outline)
+        nodes_to_create: list[DocumentStructureNode] = []
+        for node_dto, node_id, parent_id in flat_nodes:
+            clean_title = node_dto.title.strip()
+            norm_title = unicodedata.normalize("NFC", clean_title)
+            db_node = DocumentStructureNode(
+                id=node_id,
+                processing_run=run,
+                resource=run.resource,
+                library=run.library,
+                parent_id=parent_id,
+                node_type=node_dto.node_type,
+                level=node_dto.level,
+                title=clean_title,
+                normalized_title=norm_title,
+                page_start=node_dto.page_start,
+                page_end=node_dto.page_end,
+                sequence=node_dto.sequence,
+                source=node_dto.source,
+                confidence=node_dto.confidence,
+                metadata=node_dto.metadata,
+            )
+            nodes_to_create.append(db_node)
+
+        DocumentStructureNode.objects.bulk_create(nodes_to_create)
+        created_structure_nodes = nodes_to_create
 
     created_chunks: list[DocumentChunk] = []
     chunk_embedding_pairs: list[tuple[DocumentChunk, Sequence[float]]] = []
 
     for chunk_res, vector in zip(chunks, vectors, strict=True):
+        matched_node = _find_enclosing_structure_node(
+            chunk_res, created_structure_nodes
+        )
         chunk_obj = DocumentChunk(
             processing_run=run,
             resource=run.resource,
             library=run.library,
+            structure_node=matched_node,
             sequence=chunk_res.sequence,
             text=chunk_res.text,
             token_count=chunk_res.token_count,
@@ -99,7 +218,50 @@ def write_chunks_and_embeddings(
         embeddings.append(embedding_obj)
 
     ChunkEmbedding.objects.bulk_create(embeddings)
+
+    # Persist physical-to-printed DocumentPageMap records if present
+    label_to_physical: dict[str, int] | None = None
+    if page_labels:
+        map_objs: list[DocumentPageMap] = [
+            DocumentPageMap(
+                processing_run=run,
+                resource=run.resource,
+                physical_page=phys_p,
+                printed_label=lbl,
+                normalized_label=lbl.strip().lower(),
+                source=src,
+            )
+            for phys_p, lbl, src in page_labels
+        ]
+        DocumentPageMap.objects.bulk_create(map_objs)
+        label_to_physical = {m.normalized_label: m.physical_page for m in map_objs}
+
+    # Extract and persist back-of-book subject index entries if present
+    if extracted_pages:
+        index_pages = detect_index_pages(extracted_pages, outline=outline)
+        if index_pages:
+            parsed_entries = parse_index_entries(
+                index_pages, page_map=label_to_physical
+            )
+            if parsed_entries:
+                index_objs: list[BookIndexEntry] = [
+                    BookIndexEntry(
+                        processing_run=run,
+                        resource=run.resource,
+                        term=e.term,
+                        normalized_term=e.normalized_term,
+                        subterm=e.subterm,
+                        raw_page_references=e.raw_page_references,
+                        target_physical_pages=e.target_physical_pages,
+                    )
+                    for e in parsed_entries
+                ]
+                BookIndexEntry.objects.bulk_create(index_objs)
+
     return created_chunks
+
+
+
 
 
 @transaction.atomic

@@ -10,7 +10,7 @@ import re
 import unicodedata
 from dataclasses import dataclass, field
 
-from .extractors import ExtractedDocument
+from .extractors import ExtractedDocument, OutlineNode
 
 
 @dataclass(frozen=True)
@@ -30,11 +30,13 @@ class NormalizedDocument:
 
     segments: list[NormalizedSegment] = field(default_factory=list)
     full_text: str = ""
+    outline: list[OutlineNode] = field(default_factory=list)
 
     @property
     def is_empty(self) -> bool:
         """Return True if no usable normalized text exists."""
         return not bool(self.full_text.strip())
+
 
 
 def _clean_unicode_and_controls(text: str) -> str:
@@ -116,7 +118,7 @@ def normalize(doc: ExtractedDocument) -> NormalizedDocument:
         NormalizedDocument with canonical text and exact character ranges.
     """
     if not doc.pages:
-        return NormalizedDocument()
+        return NormalizedDocument(outline=doc.outline)
 
     # Pre-clean pages
     cleaned_page_texts = [
@@ -162,4 +164,6 @@ def normalize(doc: ExtractedDocument) -> NormalizedDocument:
     return NormalizedDocument(
         segments=segments,
         full_text=assembled_full_text,
+        outline=doc.outline,
     )
+

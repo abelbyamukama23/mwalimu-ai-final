@@ -84,6 +84,26 @@ class ProvenanceSerializer(serializers.Serializer):  # type: ignore[type-arg]
     content_sha256 = serializers.CharField()
 
 
+class EvidenceAnswerSpanSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Serializer for extractive sentence-level evidence span."""
+
+    text = serializers.CharField()
+    char_start = serializers.IntegerField()
+    char_end = serializers.IntegerField()
+    role = serializers.CharField()
+    confidence = serializers.FloatField()
+
+
+class FormattedCitationSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Serializer for resolved academic citation."""
+
+    formatted = serializers.CharField()
+    printed_page = serializers.CharField(allow_null=True)
+    physical_page = serializers.IntegerField(allow_null=True)
+    section = serializers.CharField(allow_null=True)
+    resource_name = serializers.CharField()
+
+
 class SearchResultItemSerializer(serializers.Serializer):  # type: ignore[type-arg]
     """Serializer for a single scored chunk result."""
 
@@ -91,6 +111,9 @@ class SearchResultItemSerializer(serializers.Serializer):  # type: ignore[type-a
     score = serializers.FloatField()
     text = serializers.CharField()
     provenance = ProvenanceSerializer()
+    citation = FormattedCitationSerializer(required=False, allow_null=True)
+    answer_spans = EvidenceAnswerSpanSerializer(many=True, required=False, allow_null=True)
+
 
 
 class SearchResponseSerializer(serializers.Serializer):  # type: ignore[type-arg]

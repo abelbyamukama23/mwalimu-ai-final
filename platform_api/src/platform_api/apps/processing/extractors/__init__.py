@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from enum import Enum
+from typing import TYPE_CHECKING, Any
 
 from platform_api.apps.resources.models import ResourceType
 
@@ -15,6 +16,36 @@ class ExtractionError(Exception):
     """Raised when document extraction fails due to corrupt or unreadable files."""
 
 
+class StructureNodeType(str, Enum):
+    """Framework-independent node types for extracted document structure."""
+
+    DOCUMENT = "document"
+    PART = "part"
+    CHAPTER = "chapter"
+    SECTION = "section"
+    SUBSECTION = "subsection"
+    APPENDIX = "appendix"
+    FRONT_MATTER = "front_matter"
+    BACK_MATTER = "back_matter"
+    OTHER = "other"
+
+
+@dataclass(frozen=True)
+class OutlineNode:
+    """A structural node in the document outline tree."""
+
+    title: str
+    level: int = 1
+    node_type: str = StructureNodeType.OTHER
+    page_start: int | None = None
+    page_end: int | None = None
+    sequence: int = 0
+    source: str = "native"
+    confidence: float | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    children: list[OutlineNode] = field(default_factory=list)
+
+
 @dataclass(frozen=True)
 class ExtractedPage:
     """A single page or structural segment of extracted text."""
@@ -22,6 +53,7 @@ class ExtractedPage:
     page: int | None
     text: str
     heading: str | None = None
+    printed_label: str | None = None
 
 
 @dataclass(frozen=True)
@@ -29,11 +61,14 @@ class ExtractedDocument:
     """Structured representation of extracted document content."""
 
     pages: list[ExtractedPage] = field(default_factory=list)
+    outline: list[OutlineNode] = field(default_factory=list)
+    page_labels: list[tuple[int, str, str]] = field(default_factory=list)
 
     @property
     def is_empty(self) -> bool:
         """Return True if no text was extracted across all pages."""
         return not any(page.text.strip() for page in self.pages)
+
 
 
 def extract(content: bytes, resource_type: str) -> ExtractedDocument:
@@ -65,3 +100,4 @@ def extract(content: bytes, resource_type: str) -> ExtractedDocument:
         raise ExtractionError(
             f"Unsupported resource type for extraction: {resource_type}"
         )
+
