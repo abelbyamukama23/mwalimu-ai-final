@@ -5,7 +5,7 @@ from typing import Any
 from django.contrib import admin
 from django.http import HttpRequest, JsonResponse
 from django.urls import include, path
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_http_methods
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from platform_api.apps.users.views import (
@@ -65,7 +65,7 @@ def _ordered_admin_app_list(
 admin.site.get_app_list = _ordered_admin_app_list  # type: ignore[method-assign,assignment]
 
 
-@require_GET
+@require_http_methods(["GET", "HEAD"])
 def root_view(request: HttpRequest) -> JsonResponse:
     """Root endpoint for Mwalimu Platform API."""
     return JsonResponse(
@@ -80,9 +80,10 @@ def root_view(request: HttpRequest) -> JsonResponse:
     )
 
 
-@require_GET
+@require_http_methods(["GET", "HEAD"])
 def health_check(request: HttpRequest) -> JsonResponse:
     """Lightweight unauthenticated health check for Railway deployment."""
+
     return JsonResponse(
         {
             "status": "healthy",
