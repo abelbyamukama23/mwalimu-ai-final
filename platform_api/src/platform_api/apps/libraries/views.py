@@ -52,6 +52,56 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         if not isinstance(user, User):
             return Library.objects.none()
 
+        granted_library_ids = LibraryAccessPolicy.objects.filter(
+            user=user,
+        ).values_list("library_id", flat=True)
+
+        institution_param = (
+            self.request.query_params.get("institution_id")
+            or self.request.headers.get("X-Institution-Id")
+        )
+        if institution_param:
+            try:
+                target_inst_id = uuid.UUID(str(institution_param))
+            except (ValueError, TypeError):
+                return Library.objects.none()
+
+            is_admin = Membership.objects.filter(
+                user=user,
+                institution_id=target_inst_id,
+                role=MembershipRole.ADMINISTRATOR,
+                status=MembershipStatus.ACTIVE,
+            ).exists()
+
+            if is_admin:
+                return Library.objects.filter(
+                    institution_id=target_inst_id,
+                    scope_type=LibraryScopeType.INSTITUTION,
+                    status=LibraryStatus.ACTIVE,
+                ).order_by("-created_at")
+
+            is_member = Membership.objects.filter(
+                user=user,
+                institution_id=target_inst_id,
+                status=MembershipStatus.ACTIVE,
+            ).exists()
+
+            if is_member:
+                return (
+                    Library.objects.filter(
+                        institution_id=target_inst_id,
+                        scope_type=LibraryScopeType.INSTITUTION,
+                        status=LibraryStatus.ACTIVE,
+                    )
+                    .filter(
+                        models.Q(visibility=LibraryVisibility.DISCOVERABLE)
+                        | models.Q(id__in=granted_library_ids)
+                    )
+                    .order_by("-created_at")
+                )
+
+            return Library.objects.none()
+
         personal_q = models.Q(
             scope_type=LibraryScopeType.PERSONAL,
             owner=user,
@@ -67,10 +117,6 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             user=user,
             status=MembershipStatus.ACTIVE,
         ).values_list("institution_id", flat=True)
-
-        granted_library_ids = LibraryAccessPolicy.objects.filter(
-            user=user,
-        ).values_list("library_id", flat=True)
 
         institutional_q = models.Q(
             scope_type=LibraryScopeType.INSTITUTION,

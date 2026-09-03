@@ -236,6 +236,8 @@ class ResourceViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
                 "current_stage": run.current_stage,
                 "is_active": run.is_active,
                 "chunks_count": chunks_count,
+                "error_code": run.error_code,
+                "error_message": run.error_message,
                 "created_at": run.created_at.isoformat() if run.created_at else None,
                 "updated_at": run.updated_at.isoformat() if run.updated_at else None,
             }
