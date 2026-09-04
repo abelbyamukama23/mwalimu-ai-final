@@ -180,10 +180,15 @@ CORS_ALLOWED_ORIGINS = [
     origin
     for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://institutions.ai-mwalimu.com,https://mwalimu-console.pages.dev,https://platform.ai-mwalimu.com",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://institutions.ai-mwalimu.com,https://mwalimu-console.pages.dev,https://platform.ai-mwalimu.com,https://www.ai-mwalimu.com,https://ai-mwalimu.com",
     ).split(",")
     if origin
 ]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://[a-zA-Z0-9-]+\.mwalimu-console\.pages\.dev$",
+]
+
 # Cookies flow cross-origin (same-site, different port) but MUST never couple
 # with a wildcard origin. Credentials are only enabled for the explicit origins
 # listed above (django-cors-headers then reflects the specific allowed origin).
@@ -212,7 +217,7 @@ CSRF_TRUSTED_ORIGINS = [
     origin
     for origin in os.getenv(
         "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://institutions.ai-mwalimu.com,https://mwalimu-console.pages.dev,https://platform.ai-mwalimu.com",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://institutions.ai-mwalimu.com,https://mwalimu-console.pages.dev,https://platform.ai-mwalimu.com,https://www.ai-mwalimu.com,https://ai-mwalimu.com",
     ).split(",")
     if origin
 ]
