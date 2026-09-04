@@ -17,6 +17,13 @@ class LibraryScopeType(models.TextChoices):
     INSTITUTION = "institution", "Institution"
 
 
+class LibraryTargetType(models.TextChoices):
+    """Targeting scope for institutional libraries."""
+
+    UTILITY = "utility", "Universal Utility"
+    ACADEMIC_UNIT = "academic_unit", "Academic Unit Shelf"
+
+
 class LibraryStatus(models.TextChoices):
     """Lifecycle statuses for a library."""
 
@@ -87,6 +94,21 @@ class Library(models.Model):
         default=LibraryVisibility.RESTRICTED,
         db_index=True,
     )
+    target_type = models.CharField(
+        max_length=30,
+        choices=LibraryTargetType.choices,
+        default=LibraryTargetType.UTILITY,
+        db_index=True,
+        help_text="Targeting scope of this library (utility for all or targeted to an academic unit).",
+    )
+    academic_unit = models.ForeignKey(
+        "institutions.AcademicUnit",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="targeted_libraries",
+        help_text="Academic unit targeted by this library when target_type is academic_unit.",
+    )
 
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -104,6 +126,14 @@ class Library(models.Model):
             models.Index(
                 fields=["institution", "-created_at"],
                 name="lib_inst_created_idx",
+            ),
+            models.Index(
+                fields=["institution", "target_type"],
+                name="lib_inst_target_idx",
+            ),
+            models.Index(
+                fields=["academic_unit", "-created_at"],
+                name="lib_acad_unit_idx",
             ),
         ]
         constraints = [
@@ -126,6 +156,23 @@ class Library(models.Model):
                     "an institutional library must have an institution and no owner."
                 ),
             ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        target_type=LibraryTargetType.UTILITY,
+                        academic_unit__isnull=True,
+                    )
+                    | models.Q(
+                        target_type=LibraryTargetType.ACADEMIC_UNIT,
+                        academic_unit__isnull=False,
+                        scope_type=LibraryScopeType.INSTITUTION,
+                    )
+                ),
+                name="libraries_library_target_type_valid",
+                violation_error_message=(
+                    "Utility libraries cannot have an academic unit; academic unit libraries must specify an academic unit and belong to an institution."
+                ),
+            ),
             models.UniqueConstraint(
                 fields=["institution", "slug"],
                 condition=models.Q(scope_type=LibraryScopeType.INSTITUTION),
@@ -146,12 +193,38 @@ class Library(models.Model):
         verbose_name = "library"
         verbose_name_plural = "libraries"
 
+    def clean(self) -> None:
+        """Validate target_type and academic unit consistency."""
+        super().clean()
+        from django.core.exceptions import ValidationError
+
+        if self.target_type == LibraryTargetType.ACADEMIC_UNIT:
+            if not self.academic_unit_id:
+                raise ValidationError(
+                    {"academic_unit": "An academic unit must be specified when target_type is academic_unit."}
+                )
+            if self.scope_type != LibraryScopeType.INSTITUTION:
+                raise ValidationError(
+                    {"target_type": "Only institutional libraries can be targeted to an academic unit."}
+                )
+            if self.institution_id and self.academic_unit.institution_id != self.institution_id:
+                raise ValidationError(
+                    {"academic_unit": "The academic unit must belong to the same institution as the library."}
+                )
+        elif self.target_type == LibraryTargetType.UTILITY:
+            if self.academic_unit_id is not None:
+                raise ValidationError(
+                    {"academic_unit": "Utility libraries cannot be assigned to an academic unit."}
+                )
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         """Derive scope_type if unambiguous and save instance."""
         if self.institution_id is not None and self.owner_id is None:
             self.scope_type = LibraryScopeType.INSTITUTION
         elif self.owner_id is not None and self.institution_id is None:
             self.scope_type = LibraryScopeType.PERSONAL
+            self.target_type = LibraryTargetType.UTILITY
+            self.academic_unit = None
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:

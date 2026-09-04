@@ -14,6 +14,7 @@ from .models import (
     LibraryAccessPolicy,
     LibraryAccessRole,
     LibraryScopeType,
+    LibraryTargetType,
     LibraryVisibility,
 )
 
@@ -28,6 +29,15 @@ class LibraryInstitutionSerializer(serializers.ModelSerializer):  # type: ignore
 
         model = Institution
         fields = ["id", "name", "slug"]
+
+
+class LibraryAcademicUnitSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Minimal academic unit representation nested inside library responses."""
+
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    code = serializers.CharField()
+    unit_type = serializers.CharField()
 
 
 class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
@@ -45,6 +55,17 @@ class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
         choices=LibraryVisibility.choices,
         required=False,
     )
+    target_type = serializers.ChoiceField(
+        choices=LibraryTargetType.choices,
+        default=LibraryTargetType.UTILITY,
+        required=False,
+    )
+    academic_unit = LibraryAcademicUnitSerializer(read_only=True, allow_null=True)
+    academic_unit_id = serializers.UUIDField(
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         """Serializer metadata."""
@@ -56,6 +77,9 @@ class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
             "is_personal",
             "institution",
             "institution_id",
+            "target_type",
+            "academic_unit",
+            "academic_unit_id",
             "name",
             "slug",
             "description",
@@ -69,6 +93,7 @@ class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
             "scope_type",
             "is_personal",
             "institution",
+            "academic_unit",
             "created_at",
             "updated_at",
         ]
@@ -120,6 +145,40 @@ class LibrarySerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
                 if queryset.exists():
                     message = "You already have a personal library with this slug."
                     raise serializers.ValidationError({"slug": message})
+
+        # Validate targeting consistency
+        target_type = attrs.get(
+            "target_type",
+            getattr(self.instance, "target_type", LibraryTargetType.UTILITY),
+        )
+        if "academic_unit_id" in attrs:
+            academic_unit_id = attrs["academic_unit_id"]
+        elif self.instance is not None:
+            academic_unit_id = self.instance.academic_unit_id
+        else:
+            academic_unit_id = None
+
+        if target_type == LibraryTargetType.ACADEMIC_UNIT:
+            if not academic_unit_id:
+                raise serializers.ValidationError(
+                    {"academic_unit_id": "An academic unit must be specified when target_type is academic_unit."}
+                )
+            if not institution_id:
+                raise serializers.ValidationError(
+                    {"target_type": "Only institutional libraries can be targeted to an academic unit."}
+                )
+            from platform_api.apps.institutions.models import AcademicUnit
+
+            if not AcademicUnit.objects.filter(
+                pk=academic_unit_id,
+                institution_id=institution_id,
+                is_active=True,
+            ).exists():
+                raise serializers.ValidationError(
+                    {"academic_unit_id": "Specified academic unit not found in this institution."}
+                )
+        elif target_type == LibraryTargetType.UTILITY:
+            attrs["academic_unit_id"] = None
 
         return attrs
 

@@ -5,15 +5,29 @@ from typing import Any
 
 from django.db import models
 from django.db.models import QuerySet
-from rest_framework import permissions, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from platform_api.apps.institutions.audit import record_audit_event
+from platform_api.apps.institutions.models import AcademicUnit, AuditAction
 from platform_api.apps.users.models import User
 
-from .models import Membership, MembershipRole, MembershipStatus
-from .serializers import MembershipSerializer
+from .models import (
+    Membership,
+    MembershipRole,
+    MembershipStatus,
+    TeachingAssignment,
+    TeachingAssignmentStatus,
+)
+from .serializers import (
+    AcademicUnitMinimalSerializer,
+    MembershipSerializer,
+    StudentPlacementSerializer,
+    TeachingAssignmentSerializer,
+)
 
 
 def _is_institution_admin(user: User | Any, institution_id: uuid.UUID) -> bool:
@@ -219,3 +233,163 @@ class MembershipViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         context = super().get_serializer_context()
         context["request"] = self.request
         return context
+
+    @action(detail=True, methods=["get", "put"], url_path="academic-placement")
+    def academic_placement(self, request: Request, pk: str | None = None) -> Response:
+        """View or update a student's academic unit placement."""
+        membership = self.get_object()
+
+        if request.method == "GET":
+            # Member can view their own placement; institution admins can view any member's placement
+            is_self = isinstance(request.user, User) and membership.user_id == request.user.id
+            is_admin = _is_institution_admin(request.user, membership.institution_id)
+            if not (is_self or is_admin):
+                raise PermissionDenied("You do not have permission to view this academic placement.")
+
+            if not membership.academic_unit:
+                return Response(None, status=status.HTTP_200_OK)
+            return Response(
+                AcademicUnitMinimalSerializer(membership.academic_unit).data,
+                status=status.HTTP_200_OK,
+            )
+
+        # PUT: Admin updates placement
+        self._admin_required(membership)
+        serializer = StudentPlacementSerializer(data=request.data, context={"membership": membership})
+        serializer.is_valid(raise_exception=True)
+        unit_id = serializer.validated_data.get("academic_unit_id")
+
+        old_unit = membership.academic_unit
+        if unit_id is None:
+            membership.academic_unit = None
+            membership.save(update_fields=["academic_unit", "updated_at"])
+            if old_unit:
+                record_audit_event(
+                    institution=membership.institution,
+                    action=AuditAction.STUDENT_UNASSIGNED,
+                    target_type="student_placement",
+                    target_id=membership.id,
+                    target_repr=f"{membership.user.email} removed from {old_unit.name}",
+                    actor=request.user if isinstance(request.user, User) else None,
+                    metadata={"previous_unit_id": str(old_unit.id), "previous_unit_code": old_unit.code},
+                    request=request,
+                )
+        else:
+            unit = AcademicUnit.objects.get(pk=unit_id)
+            membership.academic_unit = unit
+            membership.save(update_fields=["academic_unit", "updated_at"])
+            record_audit_event(
+                institution=membership.institution,
+                action=AuditAction.STUDENT_PLACED,
+                target_type="student_placement",
+                target_id=membership.id,
+                target_repr=f"{membership.user.email} placed in {unit.name} ({unit.code})",
+                actor=request.user if isinstance(request.user, User) else None,
+                metadata={"unit_id": str(unit.id), "unit_code": unit.code, "unit_name": unit.name},
+                request=request,
+            )
+
+        out_serializer = MembershipSerializer(membership, context={"request": request})
+        return Response(out_serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get", "post"], url_path="teaching-assignments")
+    def teaching_assignments(self, request: Request, pk: str | None = None) -> Response:
+        """List or create teaching assignments for a teacher."""
+        membership = self.get_object()
+
+        if request.method == "GET":
+            is_self = isinstance(request.user, User) and membership.user_id == request.user.id
+            is_admin = _is_institution_admin(request.user, membership.institution_id)
+            if not (is_self or is_admin):
+                raise PermissionDenied("You do not have permission to view these teaching assignments.")
+
+            assignments = TeachingAssignment.objects.filter(
+                membership=membership, status=TeachingAssignmentStatus.ACTIVE
+            ).select_related("academic_unit", "membership__user")
+            return Response(TeachingAssignmentSerializer(assignments, many=True).data, status=status.HTTP_200_OK)
+
+        # POST: Admin assigns teacher
+        self._admin_required(membership)
+        if membership.role != MembershipRole.TEACHER:
+            raise ValidationError({"membership": "Teaching assignments can only be created for members with role 'teacher'."})
+
+        serializer = TeachingAssignmentSerializer(data=request.data, context={"membership": membership})
+        serializer.is_valid(raise_exception=True)
+        academic_unit_id = serializer.validated_data["academic_unit_id"]
+        unit = AcademicUnit.objects.get(pk=academic_unit_id)
+        subject = serializer.validated_data.get("subject", "").strip()
+
+        assignment, created = TeachingAssignment.objects.update_or_create(
+            membership=membership,
+            academic_unit=unit,
+            subject=subject,
+            defaults={
+                "institution": membership.institution,
+                "status": TeachingAssignmentStatus.ACTIVE,
+                "metadata": serializer.validated_data.get("metadata", {}),
+            },
+        )
+
+        record_audit_event(
+            institution=membership.institution,
+            action=AuditAction.TEACHER_ASSIGNED,
+            target_type="teaching_assignment",
+            target_id=assignment.id,
+            target_repr=f"{membership.user.email} -> {unit.name} ({subject or 'General'})",
+            actor=request.user if isinstance(request.user, User) else None,
+            metadata={
+                "teacher_email": membership.user.email,
+                "unit_id": str(unit.id),
+                "unit_code": unit.code,
+                "subject": subject,
+            },
+            request=request,
+        )
+
+        return Response(TeachingAssignmentSerializer(assignment).data, status=status.HTTP_201_CREATED)
+
+
+class TeachingAssignmentViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
+    """View set for managing specific teaching assignments directly."""
+
+    serializer_class = TeachingAssignmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = "pk"
+
+    def get_queryset(self) -> QuerySet[TeachingAssignment]:
+        """Scope assignments to user's administrative institutions or own assignments."""
+        user = self.request.user
+        if not isinstance(user, User):
+            return TeachingAssignment.objects.none()
+
+        admin_inst_ids = Membership.objects.filter(
+            user=user, role=MembershipRole.ADMINISTRATOR, status=MembershipStatus.ACTIVE
+        ).values_list("institution_id", flat=True)
+
+        return TeachingAssignment.objects.filter(
+            models.Q(institution_id__in=admin_inst_ids) | models.Q(membership__user=user)
+        ).select_related("academic_unit", "membership__user")
+
+    def destroy(self, request: Request, *args: object, **kwargs: object) -> Response:
+        """Remove or deactivate a teaching assignment."""
+        assignment = self.get_object()
+        if not _is_institution_admin(request.user, assignment.institution_id):
+            raise PermissionDenied("Only institution administrators may remove teaching assignments.")
+
+        inst = assignment.institution
+        repr_str = f"{assignment.membership.user.email} -> {assignment.academic_unit.name} ({assignment.subject or 'General'})"
+        assignment_id = assignment.id
+
+        assignment.delete()
+
+        record_audit_event(
+            institution=inst,
+            action=AuditAction.TEACHER_UNASSIGNED,
+            target_type="teaching_assignment",
+            target_id=assignment_id,
+            target_repr=repr_str,
+            actor=request.user if isinstance(request.user, User) else None,
+            metadata={"assignment_repr": repr_str},
+            request=request,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)

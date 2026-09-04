@@ -34,8 +34,19 @@ from platform_api.apps.resources.models import Resource
 from platform_api.apps.users.models import User
 
 from .audit import record_audit_event
-from .models import AuditAction, Institution, InstitutionalAuditEvent
-from .serializers import InstitutionSerializer, InstitutionalAuditEventSerializer
+from .models import (
+    AcademicUnit,
+    AcademicUnitType,
+    AuditAction,
+    Institution,
+    InstitutionalAuditEvent,
+)
+from .serializers import (
+    AcademicUnitPresetSerializer,
+    AcademicUnitSerializer,
+    InstitutionSerializer,
+    InstitutionalAuditEventSerializer,
+)
 
 
 def _is_institution_admin(user: User | Any, institution: Institution) -> bool:
@@ -601,5 +612,195 @@ class InstitutionViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
         response = FileResponse(stream, content_type=institution.logo_content_type or "image/png")
         response["Cache-Control"] = "public, max-age=3600"
         return response
+
+
+class AcademicUnitViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
+    """View set for managing academic structure (grades, classes, departments) in an institution.
+
+    Members may view academic units. Only institution administrators may create,
+    update, delete, or apply structure presets.
+    """
+
+    serializer_class = AcademicUnitSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = "pk"
+
+    def _get_institution(self) -> Institution:
+        """Resolve target institution from URL kwargs or query parameters."""
+        inst_id = self.kwargs.get("institution_pk") or self.request.query_params.get("institution_id")
+        if not inst_id:
+            raise PermissionDenied("Institution context is required.")
+        try:
+            return Institution.objects.get(pk=inst_id)
+        except Institution.DoesNotExist:
+            raise PermissionDenied("Institution not found.")
+
+    def get_queryset(self) -> QuerySet[AcademicUnit]:
+        """Return academic units for the institution if user is an authorized member."""
+        institution = self._get_institution()
+        if not _is_institution_member(self.request.user, institution):
+            raise PermissionDenied("You must be an active member of this institution to view its academic structure.")
+        return AcademicUnit.objects.filter(institution=institution).order_by("order", "name")
+
+    def perform_create(self, serializer: BaseSerializer[Any]) -> None:
+        """Create academic unit and record audit log."""
+        institution = self._get_institution()
+        if not _is_institution_admin(self.request.user, institution):
+            raise PermissionDenied("Only institution administrators may create academic units.")
+        unit: AcademicUnit = serializer.save(institution=institution)
+        record_audit_event(
+            institution=institution,
+            action=AuditAction.ACADEMIC_UNIT_CREATED,
+            target_type="academic_unit",
+            target_id=unit.id,
+            target_repr=f"{unit.name} ({unit.code})",
+            actor=self.request.user if isinstance(self.request.user, User) else None,
+            metadata={"name": unit.name, "code": unit.code, "unit_type": unit.unit_type},
+            request=self.request,
+        )
+
+    def perform_update(self, serializer: BaseSerializer[Any]) -> None:
+        """Update academic unit and record audit log."""
+        institution = self._get_institution()
+        if not _is_institution_admin(self.request.user, institution):
+            raise PermissionDenied("Only institution administrators may modify academic units.")
+        unit = self.get_object()
+        old_active = unit.is_active
+        updated_unit: AcademicUnit = serializer.save()
+        
+        action = AuditAction.ACADEMIC_UNIT_UPDATED
+        if old_active and not updated_unit.is_active:
+            action = AuditAction.ACADEMIC_UNIT_DEACTIVATED
+
+        record_audit_event(
+            institution=institution,
+            action=action,
+            target_type="academic_unit",
+            target_id=updated_unit.id,
+            target_repr=f"{updated_unit.name} ({updated_unit.code})",
+            actor=self.request.user if isinstance(self.request.user, User) else None,
+            metadata={"updated_fields": list(self.request.data.keys())},
+            request=self.request,
+        )
+
+    def perform_destroy(self, instance: AcademicUnit) -> None:
+        """Delete academic unit and record audit log."""
+        institution = self._get_institution()
+        if not _is_institution_admin(self.request.user, institution):
+            raise PermissionDenied("Only institution administrators may delete academic units.")
+        unit_repr = f"{instance.name} ({instance.code})"
+        unit_id = instance.id
+        instance.delete()
+        record_audit_event(
+            institution=institution,
+            action=AuditAction.ACADEMIC_UNIT_DELETED,
+            target_type="academic_unit",
+            target_id=unit_id,
+            target_repr=unit_repr,
+            actor=self.request.user if isinstance(self.request.user, User) else None,
+            metadata={"deleted_unit": unit_repr},
+            request=self.request,
+        )
+
+    @action(detail=False, methods=["post"], url_path="apply-preset")
+    def apply_preset(self, request: Request, institution_pk: str | None = None) -> Response:
+        """Apply a standard academic structure preset to the institution."""
+        institution = self._get_institution()
+        if not _is_institution_admin(request.user, institution):
+            raise PermissionDenied("Only institution administrators may apply structure presets.")
+
+        serializer = AcademicUnitPresetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        preset_choice = serializer.validated_data["preset"]
+
+        presets_map: dict[str, list[tuple[str, str, str, int]]] = {
+            "primary": [
+                ("Primary 1", "P1", AcademicUnitType.GRADE, 1),
+                ("Primary 2", "P2", AcademicUnitType.GRADE, 2),
+                ("Primary 3", "P3", AcademicUnitType.GRADE, 3),
+                ("Primary 4", "P4", AcademicUnitType.GRADE, 4),
+                ("Primary 5", "P5", AcademicUnitType.GRADE, 5),
+                ("Primary 6", "P6", AcademicUnitType.GRADE, 6),
+                ("Primary 7", "P7", AcademicUnitType.GRADE, 7),
+            ],
+            "secondary": [
+                ("Senior 1", "S1", AcademicUnitType.YEAR, 1),
+                ("Senior 2", "S2", AcademicUnitType.YEAR, 2),
+                ("Senior 3", "S3", AcademicUnitType.YEAR, 3),
+                ("Senior 4", "S4", AcademicUnitType.YEAR, 4),
+                ("Senior 5", "S5", AcademicUnitType.YEAR, 5),
+                ("Senior 6", "S6", AcademicUnitType.YEAR, 6),
+            ],
+            "primary_and_secondary": [
+                ("Primary 1", "P1", AcademicUnitType.GRADE, 1),
+                ("Primary 2", "P2", AcademicUnitType.GRADE, 2),
+                ("Primary 3", "P3", AcademicUnitType.GRADE, 3),
+                ("Primary 4", "P4", AcademicUnitType.GRADE, 4),
+                ("Primary 5", "P5", AcademicUnitType.GRADE, 5),
+                ("Primary 6", "P6", AcademicUnitType.GRADE, 6),
+                ("Primary 7", "P7", AcademicUnitType.GRADE, 7),
+                ("Senior 1", "S1", AcademicUnitType.YEAR, 8),
+                ("Senior 2", "S2", AcademicUnitType.YEAR, 9),
+                ("Senior 3", "S3", AcademicUnitType.YEAR, 10),
+                ("Senior 4", "S4", AcademicUnitType.YEAR, 11),
+                ("Senior 5", "S5", AcademicUnitType.YEAR, 12),
+                ("Senior 6", "S6", AcademicUnitType.YEAR, 13),
+            ],
+            "tertiary": [
+                ("Year 1", "Y1", AcademicUnitType.YEAR, 1),
+                ("Year 2", "Y2", AcademicUnitType.YEAR, 2),
+                ("Year 3", "Y3", AcademicUnitType.YEAR, 3),
+                ("Year 4", "Y4", AcademicUnitType.YEAR, 4),
+            ],
+        }
+
+        unit_specs = presets_map[preset_choice]
+        created_or_updated: list[AcademicUnit] = []
+        for name, code, u_type, order in unit_specs:
+            unit, _ = AcademicUnit.objects.update_or_create(
+                institution=institution,
+                code=code,
+                defaults={
+                    "name": name,
+                    "unit_type": u_type,
+                    "order": order,
+                    "is_active": True,
+                },
+            )
+            created_or_updated.append(unit)
+
+        record_audit_event(
+            institution=institution,
+            action=AuditAction.ACADEMIC_UNIT_CREATED,
+            target_type="academic_structure",
+            target_id=institution.id,
+            target_repr=f"Preset: {preset_choice}",
+            actor=request.user if isinstance(request.user, User) else None,
+            metadata={"preset": preset_choice, "units_count": len(created_or_updated)},
+            request=request,
+        )
+
+        out_serializer = AcademicUnitSerializer(created_or_updated, many=True)
+        return Response(out_serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"], url_path="teachers")
+    def teachers(self, request: Request, pk: str | None = None, institution_pk: str | None = None) -> Response:
+        """List active teachers assigned to this academic unit."""
+        unit = self.get_object()
+        from platform_api.apps.memberships.serializers import TeachingAssignmentSerializer
+
+        assignments = unit.teaching_assignments.filter(status="active").select_related("membership__user", "academic_unit")
+        serializer = TeachingAssignmentSerializer(assignments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"], url_path="students")
+    def students(self, request: Request, pk: str | None = None, institution_pk: str | None = None) -> Response:
+        """List active students placed in this academic unit."""
+        unit = self.get_object()
+        from platform_api.apps.memberships.serializers import MembershipSerializer
+
+        students = unit.student_memberships.filter(status=MembershipStatus.ACTIVE).select_related("user", "institution")
+        serializer = MembershipSerializer(students, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 

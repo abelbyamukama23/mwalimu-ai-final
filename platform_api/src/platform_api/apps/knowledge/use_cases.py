@@ -83,6 +83,35 @@ class SearchKnowledgeUseCase:
             scope_type=scope_type,
         )
 
+        # 1b. Apply Academic Context targeting within authorized boundary
+        from .academic_context import (
+            AcademicContextSummary,
+            filter_libraries_by_academic_context,
+            resolve_academic_context,
+        )
+
+        academic_ctx = resolve_academic_context(
+            user, institution_id=request_dto.institution_id
+        )
+        if request_dto.academic_unit_id:
+            academic_ctx = AcademicContextSummary(
+                institution_id=request_dto.institution_id or academic_ctx.institution_id,
+                role=academic_ctx.role,
+                academic_unit_ids=frozenset([request_dto.academic_unit_id]),
+                is_administrator=academic_ctx.is_administrator,
+            )
+
+        if academic_ctx.has_academic_context and not scope.is_empty:
+            targeted_lib_ids = filter_libraries_by_academic_context(
+                authorized_library_ids=scope.authorized_library_ids,
+                academic_context=academic_ctx,
+            )
+            if targeted_lib_ids:
+                scope = EffectiveRetrievalScope(
+                    authorized_library_ids=targeted_lib_ids,
+                    authorized_resource_ids=scope.authorized_resource_ids,
+                )
+
         max_top_k = int(getattr(settings, "KNOWLEDGE_GATEWAY_MAX_TOP_K", 50))
         effective_top_k = max(1, min(request_dto.top_k, max_top_k))
 
@@ -283,6 +312,8 @@ class SearchKnowledgeUseCase:
                 "answer_ready_cluster": cluster_ready,
                 "citation_resolution_applied": True,
                 "synthesized_derivation": synthesized_derivation_data,
+                "academic_context_applied": academic_ctx.has_academic_context,
+                "academic_units_scoped": [str(u) for u in academic_ctx.academic_unit_ids],
             },
         )
 

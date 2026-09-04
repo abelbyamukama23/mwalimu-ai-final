@@ -137,6 +137,80 @@ class AuditAction(models.TextChoices):
     INSTITUTION_UPDATED = "institution.updated", "Institution Settings Updated"
     BRANDING_UPDATED = "institution.branding_updated", "Branding Updated"
 
+    # Academic Structure & Placement (Phase 4)
+    ACADEMIC_UNIT_CREATED = "academic_unit.created", "Academic Unit Created"
+    ACADEMIC_UNIT_UPDATED = "academic_unit.updated", "Academic Unit Updated"
+    ACADEMIC_UNIT_DEACTIVATED = "academic_unit.deactivated", "Academic Unit Deactivated"
+    ACADEMIC_UNIT_DELETED = "academic_unit.deleted", "Academic Unit Deleted"
+    STUDENT_PLACED = "student.placed", "Student Placed in Academic Unit"
+    STUDENT_UNASSIGNED = "student.unassigned", "Student Academic Unit Unassigned"
+    TEACHER_ASSIGNED = "teacher.assigned", "Teacher Assigned to Academic Unit"
+    TEACHER_UNASSIGNED = "teacher.unassigned", "Teacher Removed from Academic Unit"
+    LIBRARY_TARGETING_UPDATED = "library.targeting_updated", "Library Targeting Updated"
+
+
+class AcademicUnitType(models.TextChoices):
+    """Classification of academic units within an institution."""
+
+    GRADE = "grade", "Grade Level"
+    YEAR = "year", "Year / Form"
+    DEPARTMENT = "department", "Department"
+    STREAM = "stream", "Stream / Class Section"
+    STAGE = "stage", "Stage / Level"
+    OTHER = "other", "Other Unit"
+
+
+class AcademicUnit(models.Model):
+    """An organizational academic cohort, class, or department within an institution."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    institution = models.ForeignKey(
+        Institution,
+        on_delete=models.CASCADE,
+        related_name="academic_units",
+        db_index=True,
+    )
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=50, db_index=True)
+    unit_type = models.CharField(
+        max_length=30,
+        choices=AcademicUnitType.choices,
+        default=AcademicUnitType.GRADE,
+        db_index=True,
+    )
+    order = models.IntegerField(
+        default=0,
+        db_index=True,
+        help_text="Sequence index for academic progression (e.g. 1 for P1, 2 for P2).",
+    )
+    is_active = models.BooleanField(default=True, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """Model metadata."""
+
+        db_table = "institutions_academicunit"
+        ordering = ["order", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["institution", "code"],
+                condition=models.Q(is_active=True),
+                name="institutions_academicunit_institution_code_unique",
+                violation_error_message=(
+                    "An active academic unit with this code already exists in this institution."
+                ),
+            ),
+        ]
+        verbose_name = "academic unit"
+        verbose_name_plural = "academic units"
+
+    def __str__(self) -> str:
+        """Return the academic unit name and code."""
+        return f"{self.name} ({self.code}) @ {self.institution.name}"
+
 
 class InstitutionalAuditEvent(models.Model):
     """Immutable, append-only ledger of administrative actions for an institution."""

@@ -16,6 +16,8 @@ class SearchRequestDTO:
     top_k: int = 10
     similarity_threshold: float | None = None
     include_text: bool = True
+    academic_unit_id: uuid.UUID | None = None
+    institution_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)

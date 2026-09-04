@@ -168,7 +168,12 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
                 target_id=library.id,
                 target_repr=library.name,
                 actor=self.request.user,
-                metadata={"visibility": library.visibility, "slug": library.slug},
+                metadata={
+                    "visibility": library.visibility,
+                    "slug": library.slug,
+                    "target_type": library.target_type,
+                    "academic_unit_id": str(library.academic_unit_id) if library.academic_unit_id else None,
+                },
                 request=self.request,
             )
         else:
@@ -190,9 +195,13 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             from platform_api.apps.institutions.audit import record_audit_event
             from platform_api.apps.institutions.models import AuditAction
 
+            action = AuditAction.LIBRARY_UPDATED
+            if "target_type" in request.data or "academic_unit_id" in request.data:
+                action = AuditAction.LIBRARY_TARGETING_UPDATED
+
             record_audit_event(
                 institution=library.institution,
-                action=AuditAction.LIBRARY_UPDATED,
+                action=action,
                 target_type="library",
                 target_id=library.id,
                 target_repr=library.name,
@@ -216,9 +225,13 @@ class LibraryViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
             from platform_api.apps.institutions.audit import record_audit_event
             from platform_api.apps.institutions.models import AuditAction
 
+            action = AuditAction.LIBRARY_UPDATED
+            if "target_type" in request.data or "academic_unit_id" in request.data:
+                action = AuditAction.LIBRARY_TARGETING_UPDATED
+
             record_audit_event(
                 institution=library.institution,
-                action=AuditAction.LIBRARY_UPDATED,
+                action=action,
                 target_type="library",
                 target_id=library.id,
                 target_repr=library.name,

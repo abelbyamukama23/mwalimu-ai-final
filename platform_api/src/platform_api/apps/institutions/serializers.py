@@ -1,5 +1,7 @@
 """Serializers for the institutions app."""
 
+from typing import Any
+
 from rest_framework import serializers
 
 from .models import Institution, InstitutionType, InstitutionalAuditEvent
@@ -77,4 +79,61 @@ class InstitutionalAuditEventSerializer(serializers.ModelSerializer):  # type: i
             "created_at",
         ]
         read_only_fields = fields
+
+
+class AcademicUnitSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
+    """Serializer for academic units within an institution."""
+
+    institution_id = serializers.UUIDField(source="institution.id", read_only=True)
+    student_count = serializers.SerializerMethodField()
+    teacher_count = serializers.SerializerMethodField()
+
+    class Meta:
+        """Serializer metadata."""
+
+        from .models import AcademicUnit
+
+        model = AcademicUnit
+        fields = [
+            "id",
+            "institution_id",
+            "name",
+            "code",
+            "unit_type",
+            "order",
+            "is_active",
+            "metadata",
+            "student_count",
+            "teacher_count",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "institution_id",
+            "student_count",
+            "teacher_count",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_student_count(self, obj: Any) -> int:
+        """Return count of active students placed in this academic unit."""
+        return obj.student_memberships.filter(status="active").count()
+
+    def get_teacher_count(self, obj: Any) -> int:
+        """Return count of active teachers assigned to this academic unit."""
+        return obj.teaching_assignments.filter(status="active").count()
+
+
+class AcademicUnitPresetSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Input serializer for applying standard academic structure presets."""
+
+    PRESET_CHOICES = [
+        ("primary", "Primary (P1 - P7)"),
+        ("secondary", "Secondary (S1 - S6)"),
+        ("primary_and_secondary", "Primary & Secondary (P1 - S6)"),
+        ("tertiary", "Tertiary / Higher Ed (Year 1 - Year 4)"),
+    ]
+    preset = serializers.ChoiceField(choices=PRESET_CHOICES)
 
