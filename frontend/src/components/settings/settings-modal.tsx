@@ -26,6 +26,7 @@ import { GeneralSection } from "./sections/general-section";
 import { InstitutionSection } from "./sections/institution-section";
 import { LanguageSection } from "./sections/language-section";
 import { LearningSection } from "./sections/learning-section";
+import { NotificationsSection } from "./sections/notifications-section";
 import { PrivacySection } from "./sections/privacy-section";
 import { VoiceSection } from "./sections/voice-section";
 
@@ -67,6 +68,8 @@ function SectionPanel({ section }: { section: SettingsSection }) {
       return <AppearanceSection />;
     case "voice":
       return <VoiceSection />;
+    case "notifications":
+      return <NotificationsSection />;
     case "familiar-regions":
       return <FamiliarRegionsSection />;
     case "institution":

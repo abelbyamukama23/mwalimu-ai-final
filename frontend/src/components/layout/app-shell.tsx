@@ -4,7 +4,6 @@ import { Menu01Icon, SidebarLeftIcon } from "hugeicons-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { SidebarContent } from "@/components/layout/sidebar";
-import { NotificationCenter } from "@/components/notifications/notification-center";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
 import { MwalimuLogo } from "@/components/ui/logo";
@@ -43,16 +42,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           >
             {collapsed ? (
-              <div className="flex flex-col items-center gap-2">
-                <IconButton
-                  aria-label="Expand sidebar"
-                  onClick={() => setCollapsed(false)}
-                  className="text-ink-secondary hover:text-ink"
-                >
-                  <SidebarLeftIcon size={18} />
-                </IconButton>
-                <NotificationCenter align="start" side="right" />
-              </div>
+              <IconButton
+                aria-label="Expand sidebar"
+                onClick={() => setCollapsed(false)}
+                className="text-ink-secondary hover:text-ink"
+              >
+                <SidebarLeftIcon size={18} />
+              </IconButton>
             ) : (
               <>
                 <Link
@@ -63,7 +59,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <span className="text-17 font-semibold text-ink">Mwalimu</span>
                 </Link>
                 <div className="flex-1" />
-                <NotificationCenter align="end" side="bottom" />
                 <IconButton
                   aria-label="Collapse sidebar"
                   onClick={() => setCollapsed(true)}
@@ -92,15 +87,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Menu01Icon size={18} />
       </IconButton>
 
-      {/* Mobile notification trigger (floating control) */}
-      <div className="fixed right-3 top-3 z-30 lg:hidden">
-        <NotificationCenter
-          align="end"
-          side="bottom"
-          triggerClassName="h-9 w-9 rounded-md border border-border bg-surface/90 shadow-overlay"
-        />
-      </div>
-
       {/* Mobile navigation drawer */}
       <Drawer open={navOpen} onOpenChange={setNavOpen}>
         <DrawerContent
@@ -112,8 +98,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-3">
               <MwalimuLogo size={28} />
               <span className="text-17 font-semibold text-ink">Mwalimu</span>
-              <div className="flex-1" />
-              <NotificationCenter align="end" side="bottom" />
             </div>
             <div className="min-h-0 flex-1">
               <SidebarContent />

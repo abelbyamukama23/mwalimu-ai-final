@@ -5,6 +5,7 @@ import {
   Globe02Icon,
   Location01Icon,
   Logout01Icon,
+  Notification01Icon,
   PaintBoardIcon,
   Settings01Icon,
   SparklesIcon,
@@ -26,6 +27,7 @@ import {
 const MENU = [
   { id: "general", icon: UserCircleIcon, label: "Profile" },
   { id: "general", icon: Settings01Icon, label: "Settings" },
+  { id: "notifications", icon: Notification01Icon, label: "Notifications" },
   { id: "familiar-regions", icon: Location01Icon, label: "Familiar regions" },
   { id: "institution", icon: Building01Icon, label: "Institution" },
   { id: "appearance", icon: PaintBoardIcon, label: "Appearance" },

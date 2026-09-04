@@ -63,7 +63,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: "Notifications",
     icon: Notification01Icon,
     description: "What Mwalimu tells you about, and when.",
-    status: { kind: "pending", label: "Coming soon" },
+    status: { kind: "backend", label: "Communications & Inbox" },
   },
   {
     id: "appearance",
