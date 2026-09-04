@@ -275,52 +275,47 @@ def render_welcome_html(display_name: str, frontend_url: str) -> str:
 
 
 def send_verification_otp_email(email: str, otp: str) -> None:
-    """Send the 6-digit verification code email to a learner."""
-    config = _get_resend_config()
-    html = render_verification_otp_html(otp, config["frontend_url"])
-    text = (
-        f"Your Mwalimu verification code is: {otp}\n\nThis code expires in 10 minutes."
-    )
+    """Send the 6-digit verification code email to a learner via communication service."""
     try:
-        _send_resend_email(
-            to_email=email,
-            subject="Verify your Mwalimu Account",
-            html_content=html,
-            text_content=text,
+        from platform_api.apps.communications.intents import CommunicationIntent
+        from platform_api.apps.communications.services import dispatch_intent
+
+        dispatch_intent(
+            intent=CommunicationIntent.AUTH_EMAIL_VERIFICATION,
+            context={"otp": otp},
+            recipient_email=email,
         )
     except Exception as exc:
         logger.warning("Could not dispatch verification email to %s: %s", email, exc)
 
 
 def send_password_reset_otp_email(email: str, otp: str) -> None:
-    """Send the 6-digit password reset code email."""
-    config = _get_resend_config()
-    html = render_password_reset_otp_html(otp, config["frontend_url"])
-    text = f"Your Mwalimu password reset code is: {otp}\n\nThis code expires in 10 minutes."
+    """Send the 6-digit password reset code email via communication service."""
     try:
-        _send_resend_email(
-            to_email=email,
-            subject="Reset your Mwalimu Password",
-            html_content=html,
-            text_content=text,
+        from platform_api.apps.communications.intents import CommunicationIntent
+        from platform_api.apps.communications.services import dispatch_intent
+
+        dispatch_intent(
+            intent=CommunicationIntent.AUTH_PASSWORD_RESET,
+            context={"otp": otp},
+            recipient_email=email,
         )
     except Exception as exc:
         logger.warning("Could not dispatch password reset email to %s: %s", email, exc)
 
 
 def send_welcome_email(email: str, display_name: str = "") -> None:
-    """Send the welcome email following successful verification."""
-    config = _get_resend_config()
-    html = render_welcome_html(display_name, config["frontend_url"])
-    url = config["frontend_url"]
-    text = f"Welcome to Mwalimu! Your account is ready: {url}/chat/new"
+    """Send the welcome email following successful verification via communication service."""
     try:
-        _send_resend_email(
-            to_email=email,
-            subject="Welcome to Mwalimu",
-            html_content=html,
-            text_content=text,
+        from platform_api.apps.communications.intents import CommunicationIntent
+        from platform_api.apps.communications.services import dispatch_intent
+
+        dispatch_intent(
+            intent=CommunicationIntent.AUTH_WELCOME,
+            context={"display_name": display_name},
+            recipient_email=email,
         )
     except Exception as exc:
         logger.warning("Could not dispatch welcome email to %s: %s", email, exc)
+
 

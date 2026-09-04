@@ -147,6 +147,7 @@ urlpatterns = [
     path("api/v1/", include("platform_api.apps.agents.urls")),
     path("api/v1/", include("platform_api.apps.context.urls")),
     path("api/v1/", include("platform_api.apps.connectors.urls")),
+    path("api/v1/", include("platform_api.apps.communications.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
 ]

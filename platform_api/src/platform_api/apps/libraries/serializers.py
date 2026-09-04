@@ -1,6 +1,7 @@
 """Serializers for the libraries app."""
 
 import uuid
+from typing import Any
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -233,3 +234,104 @@ class LibraryAccessPolicySerializer(serializers.ModelSerializer):  # type: ignor
             user=user,
             role=role_value,
         )
+
+
+def mask_email(email: str) -> str:
+    """Mask email for anti-enumeration in public invitation resolution."""
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        masked_local = local[0] + "***"
+    else:
+        masked_local = local[0] + "***" + local[-1]
+    return f"{masked_local}@{domain}"
+
+
+class LibraryInvitationSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
+    """Full serializer for library invitations managed by librarians and administrators."""
+
+    library_id = serializers.UUIDField(source="library.id", read_only=True)
+    library_name = serializers.CharField(source="library.name", read_only=True)
+    institution_id = serializers.UUIDField(
+        source="institution.id", read_only=True, allow_null=True
+    )
+    institution_name = serializers.CharField(
+        source="institution.name", read_only=True, allow_null=True
+    )
+    inviter_id = serializers.UUIDField(source="inviter.id", read_only=True)
+    inviter_email = serializers.EmailField(source="inviter.email", read_only=True)
+    is_expired = serializers.BooleanField(read_only=True)
+    is_pending = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        """Serializer metadata."""
+
+        from .models import LibraryInvitation
+
+        model = LibraryInvitation
+        fields = [
+            "id",
+            "library_id",
+            "library_name",
+            "institution_id",
+            "institution_name",
+            "inviter_id",
+            "inviter_email",
+            "recipient_email",
+            "recipient_user_id",
+            "intended_access",
+            "status",
+            "token",
+            "expires_at",
+            "accepted_at",
+            "declined_at",
+            "revoked_at",
+            "is_expired",
+            "is_pending",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class LibraryInvitationCreateSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Input serializer for creating a library invitation."""
+
+    email = serializers.EmailField()
+    access = serializers.ChoiceField(
+        choices=LibraryAccessRole.choices,
+        default=LibraryAccessRole.STUDENT,
+    )
+
+
+class PublicLibraryInvitationResolutionSerializer(serializers.Serializer):  # type: ignore[type-arg]
+    """Safe public serializer for resolving invitations by token without email enumeration."""
+
+    id = serializers.UUIDField()
+    library_id = serializers.UUIDField(source="library.id")
+    library_name = serializers.CharField(source="library.name")
+    institution_name = serializers.CharField(
+        source="institution.name", allow_null=True
+    )
+    inviter_name = serializers.SerializerMethodField()
+    recipient_email_masked = serializers.SerializerMethodField()
+    intended_access = serializers.CharField()
+    status = serializers.CharField()
+    is_expired = serializers.BooleanField()
+    is_pending = serializers.BooleanField()
+    expires_at = serializers.DateTimeField()
+
+    def get_inviter_name(self, obj: Any) -> str:
+        """Return inviter display name or fallback to domain-safe representation."""
+        if not obj.inviter:
+            return "A librarian"
+        profile = getattr(obj.inviter, "profile", None)
+        if profile and profile.display_name:
+            return profile.display_name
+        return mask_email(obj.inviter.email)
+
+    def get_recipient_email_masked(self, obj: Any) -> str:
+        """Return masked recipient email to prevent email enumeration."""
+        return mask_email(obj.recipient_email)
+

@@ -8,7 +8,7 @@ from typing import Any
 from django.db.models import Count, Q, QuerySet, Sum
 from django.db.models.functions import Coalesce, TruncDate
 from django.utils import timezone
-from rest_framework import permissions, status, viewsets
+from rest_framework import parsers, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
@@ -449,4 +449,157 @@ class InstitutionViewSet(viewsets.ModelViewSet):  # type: ignore[type-arg]
 
         serializer = ConnectionListSerializer(connections, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path="branding",
+        parser_classes=[parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser],
+    )
+    def branding(self, request: Request, pk: str | None = None) -> Response:
+        """Upload, replace, or remove the institutional badge/logo."""
+        import os
+        import uuid
+        from django.core.exceptions import ValidationError
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        from platform_api.apps.resources.storage import get_object_storage
+
+        institution = self.get_object()
+        if not _is_institution_admin(request.user, institution):
+            raise PermissionDenied(
+                "Only institution administrators may modify institutional branding."
+            )
+
+        storage = get_object_storage()
+
+        if request.method == "DELETE":
+            if institution.logo_object_key:
+                try:
+                    storage.delete(institution.logo_object_key)
+                except Exception:  # noqa: BLE001
+                    pass
+                institution.logo_object_key = ""
+                institution.logo_content_type = ""
+                institution.logo_updated_at = timezone.now()
+                institution.save(
+                    update_fields=[
+                        "logo_object_key",
+                        "logo_content_type",
+                        "logo_updated_at",
+                    ]
+                )
+                record_audit_event(
+                    institution=institution,
+                    action=AuditAction.BRANDING_UPDATED,
+                    target_type="institution",
+                    target_id=institution.id,
+                    target_repr=institution.name,
+                    actor=request.user if isinstance(request.user, User) else None,
+                    metadata={"event": "badge_removed"},
+                    request=request,
+                )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        # POST: Upload or replace
+        uploaded_file = request.FILES.get("file") or request.FILES.get("logo")
+        if not uploaded_file:
+            raise DRFValidationError({"file": "No image file provided for institutional badge."})
+
+        allowed_types = {
+            "image/png": ".png",
+            "image/jpeg": ".jpg",
+            "image/jpg": ".jpg",
+            "image/webp": ".webp",
+            "image/svg+xml": ".svg",
+        }
+        content_type = str(uploaded_file.content_type).lower()
+        if content_type not in allowed_types:
+            raise DRFValidationError(
+                {"file": f"Unsupported image type: '{content_type}'. Allowed: PNG, JPEG, WebP, SVG."}
+            )
+
+        max_size = 2 * 1024 * 1024  # 2MB
+        if uploaded_file.size > max_size:
+            raise DRFValidationError(
+                {"file": f"File size exceeds 2MB limit (received {uploaded_file.size} bytes)."}
+            )
+
+        data = uploaded_file.read()
+        ext = allowed_types[content_type]
+        new_key = f"institutions/{institution.id}/branding/{uuid.uuid4().hex}{ext}"
+
+        from io import BytesIO
+
+        try:
+            storage.upload(
+                new_key,
+                BytesIO(data),
+                content_type=content_type,
+                size=len(data),
+            )
+        except Exception as exc:
+            raise DRFValidationError({"file": f"Storage upload failed: {exc}"}) from exc
+
+        # Clean up old stored logo if exists
+        old_key = institution.logo_object_key
+        if old_key and old_key != new_key:
+            try:
+                storage.delete(old_key)
+            except Exception:  # noqa: BLE001
+                pass
+
+        institution.logo_object_key = new_key
+        institution.logo_content_type = content_type
+        institution.logo_updated_at = timezone.now()
+        institution.save(
+            update_fields=[
+                "logo_object_key",
+                "logo_content_type",
+                "logo_updated_at",
+            ]
+        )
+
+        record_audit_event(
+            institution=institution,
+            action=AuditAction.BRANDING_UPDATED,
+            target_type="institution",
+            target_id=institution.id,
+            target_repr=institution.name,
+            actor=request.user if isinstance(request.user, User) else None,
+            metadata={
+                "event": "badge_uploaded",
+                "content_type": content_type,
+                "size": len(data),
+            },
+            request=request,
+        )
+
+        serializer = self.get_serializer(institution)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="badge",
+        permission_classes=[permissions.AllowAny],
+    )
+    def badge(self, request: Request, pk: str | None = None) -> Any:
+        """Stream the institution's official badge/logo."""
+        from django.http import FileResponse, Http404
+        from platform_api.apps.resources.storage import get_object_storage
+
+        institution = self.get_object()
+        if not institution.logo_object_key:
+            raise Http404("Institution has not uploaded a badge logo.")
+
+        storage = get_object_storage()
+        try:
+            stream = storage.download(institution.logo_object_key)
+        except Exception as exc:
+            raise Http404(f"Badge object not found in storage: {exc}") from exc
+
+        response = FileResponse(stream, content_type=institution.logo_content_type or "image/png")
+        response["Cache-Control"] = "public, max-age=3600"
+        return response
+
 

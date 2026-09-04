@@ -57,6 +57,23 @@ class Institution(models.Model):
         related_name="created_institutions",
         help_text="User who originally established this institution workspace.",
     )
+    logo_object_key = models.CharField(
+        max_length=512,
+        blank=True,
+        default="",
+        help_text="Object storage key for the institutional badge/logo.",
+    )
+    logo_content_type = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="MIME content type of the stored logo (e.g. image/png).",
+    )
+    logo_updated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the branding logo was last modified.",
+    )
 
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -94,6 +111,12 @@ class AuditAction(models.TextChoices):
     LIBRARY_UPDATED = "library.updated", "Library Updated"
     LIBRARY_DELETED = "library.deleted", "Library Deleted"
 
+    # Library Invitations
+    INVITATION_CREATED = "library.invitation_created", "Library Invitation Created"
+    INVITATION_REVOKED = "library.invitation_revoked", "Library Invitation Revoked"
+    INVITATION_ACCEPTED = "library.invitation_accepted", "Library Invitation Accepted"
+    INVITATION_DECLINED = "library.invitation_declined", "Library Invitation Declined"
+
     # Access Policies
     ACCESS_GRANTED = "access.granted", "Access Policy Granted"
     ACCESS_UPDATED = "access.updated", "Access Policy Updated"
@@ -112,6 +135,7 @@ class AuditAction(models.TextChoices):
 
     # Institution
     INSTITUTION_UPDATED = "institution.updated", "Institution Settings Updated"
+    BRANDING_UPDATED = "institution.branding_updated", "Branding Updated"
 
 
 class InstitutionalAuditEvent(models.Model):

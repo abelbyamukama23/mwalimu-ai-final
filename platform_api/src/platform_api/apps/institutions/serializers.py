@@ -14,6 +14,7 @@ class InstitutionSerializer(serializers.ModelSerializer):  # type: ignore[type-a
         required=False,
     )
     created_by_id = serializers.UUIDField(source="created_by.id", read_only=True)
+    badge_url = serializers.SerializerMethodField()
 
     class Meta:
         """Serializer metadata."""
@@ -26,10 +27,29 @@ class InstitutionSerializer(serializers.ModelSerializer):  # type: ignore[type-a
             "status",
             "institution_type",
             "created_by_id",
+            "badge_url",
+            "logo_updated_at",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_by_id", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "created_by_id",
+            "badge_url",
+            "logo_updated_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_badge_url(self, obj: Institution) -> str | None:
+        """Return safe URL for institutional badge/logo if present."""
+        if not obj.logo_object_key:
+            return None
+        request = self.context.get("request")
+        path = f"/api/v1/institutions/{obj.id}/badge/"
+        if request:
+            return request.build_absolute_uri(path)  # type: ignore[no-any-return]
+        return path
 
 
 class InstitutionalAuditEventSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]

@@ -52,6 +52,7 @@ LOCAL_APPS = [
     "platform_api.apps.agents",
     "platform_api.apps.context",
     "platform_api.apps.connectors",
+    "platform_api.apps.communications",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

@@ -208,3 +208,112 @@ class LibraryAccessPolicy(models.Model):
     def __str__(self) -> str:
         """Return a human-readable policy description."""
         return f"{self.user.email} @ {self.library.name} ({self.role})"
+
+
+class LibraryInvitationStatus(models.TextChoices):
+    """Lifecycle statuses for a library invitation."""
+
+    PENDING = "pending", "Pending"
+    ACCEPTED = "accepted", "Accepted"
+    DECLINED = "declined", "Declined"
+    EXPIRED = "expired", "Expired"
+    REVOKED = "revoked", "Revoked"
+
+
+class LibraryInvitation(models.Model):
+    """A first-class library invitation domain record.
+
+    Bridges unregistered email addresses to registered Mwalimu accounts without
+    prematurely creating authorization records or mutating memberships.
+    Upon acceptance, the invitation transactionally creates the appropriate
+    LibraryAccessPolicy and updates its status.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    library = models.ForeignKey(
+        Library,
+        on_delete=models.CASCADE,
+        related_name="invitations",
+    )
+    institution = models.ForeignKey(
+        Institution,
+        on_delete=models.CASCADE,
+        related_name="library_invitations",
+        null=True,
+        blank=True,
+    )
+    inviter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_library_invitations",
+    )
+    recipient_email = models.EmailField(db_index=True)
+    recipient_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="received_library_invitations",
+    )
+    intended_access = models.CharField(
+        max_length=20,
+        choices=LibraryAccessRole.choices,
+        default=LibraryAccessRole.STUDENT,
+        db_index=True,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=LibraryInvitationStatus.choices,
+        default=LibraryInvitationStatus.PENDING,
+        db_index=True,
+    )
+    token = models.CharField(
+        max_length=128,
+        unique=True,
+        db_index=True,
+        help_text="Cryptographically secure single-use token for resolving the invitation.",
+    )
+    expires_at = models.DateTimeField(db_index=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    declined_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """Model metadata."""
+
+        db_table = "libraries_libraryinvitation"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["library", "recipient_email"],
+                condition=models.Q(status=LibraryInvitationStatus.PENDING),
+                name="libraries_invitation_unique_pending",
+                violation_error_message="A pending invitation already exists for this email address.",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["library", "status"]),
+            models.Index(fields=["recipient_email", "status"]),
+            models.Index(fields=["token"]),
+            models.Index(fields=["expires_at"]),
+        ]
+        verbose_name = "library invitation"
+        verbose_name_plural = "library invitations"
+
+    def __str__(self) -> str:
+        """Return readable description."""
+        return f"Invite for {self.recipient_email} to {self.library.name} [{self.status}]"
+
+    @property
+    def is_expired(self) -> bool:
+        """Return True if the invitation has passed its expiration timestamp."""
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_pending(self) -> bool:
+        """Return True if the invitation can currently be accepted or declined."""
+        return self.status == LibraryInvitationStatus.PENDING and not self.is_expired
+
