@@ -310,16 +310,20 @@ def mask_email(email: str) -> str:
 class LibraryInvitationSerializer(serializers.ModelSerializer):  # type: ignore[type-arg]
     """Full serializer for library invitations managed by librarians and administrators."""
 
+    library = AccessPolicyLibrarySerializer(read_only=True)
     library_id = serializers.UUIDField(source="library.id", read_only=True)
     library_name = serializers.CharField(source="library.name", read_only=True)
+    institution = LibraryInstitutionSerializer(read_only=True, allow_null=True)
     institution_id = serializers.UUIDField(
         source="institution.id", read_only=True, allow_null=True
     )
     institution_name = serializers.CharField(
         source="institution.name", read_only=True, allow_null=True
     )
+    inviter = AccessPolicyUserSerializer(read_only=True)
     inviter_id = serializers.UUIDField(source="inviter.id", read_only=True)
     inviter_email = serializers.EmailField(source="inviter.email", read_only=True)
+    recipient_user = AccessPolicyUserSerializer(read_only=True, allow_null=True)
     is_expired = serializers.BooleanField(read_only=True)
     is_pending = serializers.BooleanField(read_only=True)
 
@@ -331,13 +335,17 @@ class LibraryInvitationSerializer(serializers.ModelSerializer):  # type: ignore[
         model = LibraryInvitation
         fields = [
             "id",
+            "library",
             "library_id",
             "library_name",
+            "institution",
             "institution_id",
             "institution_name",
+            "inviter",
             "inviter_id",
             "inviter_email",
             "recipient_email",
+            "recipient_user",
             "recipient_user_id",
             "intended_access",
             "status",
